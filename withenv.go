@@ -12,6 +12,19 @@ import (
 	"github.com/ghodss/yaml"
 )
 
+func fileLocalPath(envPath string, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+
+	abspath, err := filepath.Abs(filepath.Dir(envPath))
+	if err != nil {
+		log.Error("Error making file path absolute to env file", err)
+		return path
+	}
+	return filepath.Join(abspath, path)
+}
+
 type Action interface {
 	Apply() map[string]string
 }
@@ -143,28 +156,27 @@ type EnvAlias struct {
 	path string
 }
 
-func (e EnvAlias) ApplyFromMap(entries []map[string]string) (map[string]string, error) {
-
+func (alias EnvAlias) ApplyFromMap(entries []map[string]string) (map[string]string, error) {
 	args := []string{}
 
 	for _, e := range entries {
 		for k, v := range e {
 			if k == "file" {
-				args = append(args, "--env", v)
+				args = append(args, "--env", fileLocalPath(alias.path, v))
 			} else {
-				args = append(args, fmt.Sprintf("--%s", k), v)
+				args = append(args, fmt.Sprintf("--%s", k), fileLocalPath(alias.path, v))
 			}
 		}
 	}
 
-	log.Debug("Loaded alias with: ", args)
+	log.Debugf("Loaded alias %s with: %s", alias.path, args)
 
 	return WithEnv(args)
 }
 
-func (e EnvAlias) Apply() map[string]string {
-	log.Debug("Reading: ", e.path)
-	b, err := ioutil.ReadFile(e.path)
+func (alias EnvAlias) Apply() map[string]string {
+	log.Debug("Reading: ", alias.path)
+	b, err := ioutil.ReadFile(alias.path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -173,7 +185,7 @@ func (e EnvAlias) Apply() map[string]string {
 
 	yaml.Unmarshal(b, &entries)
 
-	env, err := e.ApplyFromMap(entries)
+	env, err := alias.ApplyFromMap(entries)
 	if err != nil {
 		log.Fatal(err)
 	}
