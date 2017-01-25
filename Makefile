@@ -11,7 +11,7 @@ LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 
 GLIDE=$(GOPATH)/bin/glide
 
-we: $(SOURCES)
+we: $(SOURCES) $(GLIDE)
 	go build -o we $(LDFLAGS) .
 
 install: $(GLIDE)
