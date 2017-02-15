@@ -149,8 +149,9 @@ func compileValue(value string, path string) string {
 
 func applyString(env map[string]string, prefix []string, key string, value string) {
 	key = flatKey(prefix, key)
-	env[key] = value
+	env[key] = os.ExpandEnv(value)
 	os.Setenv(key, env[key])
+	log.Debugf("setting %s to %s", key, env[key])
 }
 
 // Take the default result from unmarshalling the file into an
@@ -167,7 +168,8 @@ func (f Flattener) flattenMap(env map[string]string, ev map[string]interface{}, 
 	for k, v := range ev {
 		switch v.(type) {
 		case string:
-			applyString(env, prefix, k, compileValue(v.(string), f.path))
+			value := compileValue(v.(string), f.path)
+			applyString(env, prefix, k, value)
 
 		case map[string]interface{}:
 			f.flattenMap(env, v.(map[string]interface{}), append(prefix, k))
