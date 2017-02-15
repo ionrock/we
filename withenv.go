@@ -63,10 +63,6 @@ func (e EnvFile) Parse() (map[string]string, error) {
 		log.Fatal(err)
 	}
 
-	for k, v := range env {
-		log.Debugf("%s = %s", k, v)
-	}
-
 	return env, nil
 }
 
@@ -201,11 +197,15 @@ func updateEnvMap(cur, env map[string]string) map[string]string {
 }
 
 func ignore(flag string) bool {
-	if flag == "--debug" || flag == "-D" {
-		return true
-	}
+	ignored := make(map[string]bool)
 
-	return false
+	ignored["--debug"] = true
+	ignored["-D"] = true
+	ignored["--clean"] = true
+	ignored["-c"] = true
+
+	_, ok := ignored[flag]
+	return ok
 }
 
 func pairs(args []string) chan Action {
