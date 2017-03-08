@@ -41,7 +41,7 @@ func WeAction(c *cli.Context) error {
 	// command.
 	args := c.Args()
 
-	if len(args) > 0 {
+	if len(args) == 0 {
 		args = []string{"env"}
 	}
 	parts := make([]string, len(args))
