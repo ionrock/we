@@ -14,6 +14,7 @@ VERSION=`git describe --tags --long --always --dirty`
 LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 
 GLIDE=$(GOPATH)/bin/glide
+GH_RELEASE=$(GOPATH)/bin/github-release
 
 we: $(SOURCES) $(GLIDE)
 	go build -o we $(LDFLAGS) .
@@ -46,6 +47,14 @@ build-all: $(GLIDE) $(SOURCES)
 	GOOS=linux GOARCH=386 go build -o $(BINDIR)/we-linux-386       ${LDFLAGS} ./cmd/we/
 	GOOS=windows GOARCH=386 go build -o $(BINDIR)/we-windows-386       ${LDFLAGS} ./cmd/we/
 	GOOS=darwin GOARCH=386 go build -o $(BINDIR)/we-darwin-386       ${LDFLAGS} ./cmd/we/
+
+$(GH_RELEASE):
+	go get github.com/aktau/github-release
+	go install github.com/aktau/github-release
+
+release: $(GH_RELEASE) we
+	we -e .release.yml github-release --help
+
 $(BUMP):
 	virtualenv $(VENV)
 	$(VENV)/bin/pip install --upgrade pip
