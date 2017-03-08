@@ -1,5 +1,9 @@
 .PHONY: clean install
 
+EXECUTABLE=we
+
+LAST_TAG := $(shell git describe --abbrev=0 --tags)
+
 VENV=.venv
 BUMP=$(VENV)/bin/bumpversion
 BUMPTYPE=patch
@@ -14,7 +18,7 @@ VERSION=`git describe --tags --long --always --dirty`
 LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 
 GLIDE=$(GOPATH)/bin/glide
-GH_RELEASE=$(GOPATH)/bin/github-release
+
 
 we: $(SOURCES) $(GLIDE)
 	go build -o we $(LDFLAGS) .
@@ -28,6 +32,7 @@ $(GLIDE):
 
 clean:
 	rm we
+	rm -rf bin
 
 we-example: we
 	./we -e example_env.yml echo 'Hello World!'
@@ -35,25 +40,68 @@ we-example: we
 test:
 	go test
 
-build-all: $(GLIDE) $(SOURCES)
-	glide i
+$(BINDIR):
+	mkdir -p build
 
-	# amd64
-	GOOS=linux GOARCH=amd64 go build -o $(BINDIR)/we-linux-amd64       ${LDFLAGS} ./cmd/we/
-	GOOS=windows GOARCH=amd64 go build -o $(BINDIR)/we-windows-amd64       ${LDFLAGS} ./cmd/we/
-	GOOS=darwin GOARCH=amd64 go build -o $(BINDIR)/we-darwin-amd64       ${LDFLAGS} ./cmd/we/
 
-	# i386
-	GOOS=linux GOARCH=386 go build -o $(BINDIR)/we-linux-386       ${LDFLAGS} ./cmd/we/
-	GOOS=windows GOARCH=386 go build -o $(BINDIR)/we-windows-386       ${LDFLAGS} ./cmd/we/
-	GOOS=darwin GOARCH=386 go build -o $(BINDIR)/we-darwin-386       ${LDFLAGS} ./cmd/we/
+### Release / deploy targets
+GH_RELEASE=$(GOPATH)/bin/github-release
+UPLOAD_CMD = ./we -e .release.yml $(GH_RELEASE) upload -t $(LAST_TAG) -n $(subst /,-,$(FILE)) -f $(FILE)
+
+OSLIST = darwin freebsd linux
+PLATS  = amd64 386
+
+EXE_TMPL     = bin/$(OS)/$(PLAT)/$(EXECUTABLE)
+EXE_TMPL_BZ2 = $(FN).tar.bz2
+
+UNIX_EXECUTABLES = $(foreach OS,$(OSLIST),$(foreach PLAT,$(PLATS),$(EXE_TMPL)))
+WIN_EXECUTABLES  = bin/windows/amd64/$(EXECUTABLE).exe
+
+COMPRESSED_EXECUTABLES = $(UNIX_EXECUTABLES:%=%.tar.bz2) $(WIN_EXECUTABLES).zip
+COMPRESSED_EXECUTABLE_TARGETS = $(COMPRESSED_EXECUTABLES:%=%)
+
+all: $(UNIX_EXECUTABLES) $(WIN_EXECUTABLES)
+
+compress-all: $(COMPRESSED_EXECUTABLES)
+
+# compressed artifacts, makes a huge difference (Go executable is ~9MB,
+# after compressing ~2MB)
+%.tar.bz2: %
+	tar -jcvf "$<.tar.bz2" "$<"
+%.exe.zip: %.exe
+	zip "$@" "$<"
+
+# 386
+bin/darwin/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=386 GOOS=darwin go build -o "$@"
+bin/linux/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=386 GOOS=linux go build -o "$@"
+bin/freebsd/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=386 GOOS=freebsd go build -o "$@"
+
+bin/windows/386/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+	GOARCH=386 GOOS=windows go build -o "$@"
+
+# amd64
+bin/freebsd/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@"
+bin/darwin/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@"
+bin/linux/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@"
+
+bin/windows/amd64/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@"
+
 
 $(GH_RELEASE):
 	go get github.com/aktau/github-release
 	go install github.com/aktau/github-release
 
-release: $(GH_RELEASE) we
-	we -e .release.yml github-release --help
+release: $(GH_RELEASE) $(EXECUTABLE) $(COMPRESSED_EXECUTABLES)
+	@echo "All targets $(COMPRESSED_EXECUTABLES)"
+	./we -e .release.yml $(GH_RELEASE) release -t $(LAST_TAG) -n $(LAST_TAG) || true
+	$(foreach FILE,$(COMPRESSED_EXECUTABLES),$(UPLOAD_CMD);)
 
 $(BUMP):
 	virtualenv $(VENV)
@@ -62,4 +110,4 @@ $(BUMP):
 
 bump: $(BUMP)
 	$(VENV)/bin/bumpversion $(BUMPTYPE)
-	# git push && git push --tags
+	git push && git push --tags
