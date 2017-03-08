@@ -1,5 +1,9 @@
 .PHONY: clean install
 
+VENV=.venv
+BUMP=$(VENV)/bin/bumpversion
+BUMPTYPE=patch
+
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -path ./docker -prune -o -name '*.go')
 
@@ -42,3 +46,11 @@ build-all: $(GLIDE) $(SOURCES)
 	GOOS=linux GOARCH=386 go build -o $(BINDIR)/we-linux-386       ${LDFLAGS} ./cmd/we/
 	GOOS=windows GOARCH=386 go build -o $(BINDIR)/we-windows-386       ${LDFLAGS} ./cmd/we/
 	GOOS=darwin GOARCH=386 go build -o $(BINDIR)/we-darwin-386       ${LDFLAGS} ./cmd/we/
+$(BUMP):
+	virtualenv $(VENV)
+	$(VENV)/bin/pip install --upgrade pip
+	$(VENV)/bin/pip install bumpversion
+
+bump: $(BUMP)
+	$(VENV)/bin/bumpversion $(BUMPTYPE)
+	# git push && git push --tags
