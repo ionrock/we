@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,82 +9,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/ghodss/yaml"
-)
+	yaml "gopkg.in/yaml.v2"
 
-const (
-	JSON_FILETYPE = iota
-	YAML_FILETYPE
+	log "github.com/Sirupsen/logrus"
 )
 
 type Flattener struct {
 	path string
 }
 
-func (f Flattener) filetype() int {
-
-	json := []string{"json"}
-	yaml := []string{"yaml", "yml"}
-
-	// Use the file extension first
-	for _, sfx := range json {
-		if strings.HasSuffix(f.path, sfx) {
-			log.Debug("Using JSON parser")
-			return JSON_FILETYPE
-		}
-	}
-
-	for _, sfx := range yaml {
-		if strings.HasSuffix(f.path, sfx) {
-			log.Debug("Using YAML parser")
-			return YAML_FILETYPE
-		}
-	}
-
-	// peek at the first bytes for a {
-	fh, err := os.Open(f.path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	reader := bufio.NewReader(fh)
-	start, err := reader.Peek(3)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fh.Close()
-
-	// if the { exists, we'll try json
-	if bytes.HasPrefix(bytes.TrimLeft(start, " "), []byte("{")) {
-		log.Debug("Using JSON parser")
-		return JSON_FILETYPE
-	}
-
-	// if the [ exists, we'll try json
-	if bytes.HasPrefix(bytes.TrimLeft(start, " "), []byte("[")) {
-		log.Debug("Using JSON parser")
-		return JSON_FILETYPE
-	}
-
-	log.Debug("Using YAML parser")
-	return YAML_FILETYPE
-}
-
-func (f Flattener) unmarshal(b []byte, v interface{}) error {
-	if f.filetype() == JSON_FILETYPE {
-		return json.Unmarshal(b, v)
-	}
-
-	return yaml.Unmarshal(b, v)
-}
-
 func (f Flattener) loadMap(b []byte) ([]map[string]interface{}, error) {
 	// try loading into a list of maps first
 	m := make(map[string]interface{})
 
-	err := f.unmarshal(b, &m)
+	err := yaml.Unmarshal(b, &m)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +34,7 @@ func (f Flattener) loadList(b []byte) ([]map[string]interface{}, error) {
 	// try loading into a list of maps first
 	m := make([]map[string]interface{}, 5)
 
-	err := f.unmarshal(b, &m)
+	err := yaml.Unmarshal(b, &m)
 	if err != nil {
 		log.Debug(err)
 		return nil, err
