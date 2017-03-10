@@ -24,3 +24,5 @@ $ we -e test_user_creds.yml ansible-play install-app
 ```
 
 See the [Python Docs](https://withenv.readthedocs.org) for info.
+
+https://travis-ci.org/ionrock/we/builds
