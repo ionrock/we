@@ -24,7 +24,7 @@ we: $(SOURCES) $(GLIDE)
 	go build -o we $(LDFLAGS) .
 
 install: $(GLIDE)
-	go install ./cmd/...
+	go install .
 
 $(GLIDE):
 	go get github.com/Masterminds/glide
