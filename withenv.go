@@ -160,7 +160,11 @@ func (alias EnvAlias) ApplyFromMap(entries []map[string]string) (map[string]stri
 			if k == "file" {
 				args = append(args, "--env", fileLocalPath(alias.path, v))
 			} else {
-				args = append(args, fmt.Sprintf("--%s", k), fileLocalPath(alias.path, v))
+				// don't expand paths when it is a script
+				if k != "script" {
+					v = fileLocalPath(alias.path, v)
+				}
+				args = append(args, fmt.Sprintf("--%s", k), v)
 			}
 		}
 	}
