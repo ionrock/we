@@ -1,6 +1,7 @@
 .PHONY: clean install
 
 EXECUTABLE=we
+WEPKG=./cmd/we
 
 LAST_TAG := $(shell git describe --abbrev=0 --tags)
 
@@ -21,10 +22,10 @@ GLIDE=$(GOPATH)/bin/glide
 
 
 we: $(SOURCES) $(GLIDE)
-	go build -o we $(LDFLAGS) .
+	go build  $(LDFLAGS) $(CMDPKG)
 
 install: $(GLIDE)
-	go install .
+	go install $(CMDPKG)
 
 $(GLIDE):
 	go get github.com/Masterminds/glide
@@ -73,25 +74,25 @@ compress-all: $(COMPRESSED_EXECUTABLES)
 
 # 386
 bin/darwin/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=darwin go build -o "$@"
+	GOARCH=386 GOOS=darwin go build $(LDFLAGS) -o "$@" $(CMDPKG)
 bin/linux/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=linux go build -o "$@"
+	GOARCH=386 GOOS=linux go build $(LDFLAGS) -o "$@" $(CMDPKG)
 bin/freebsd/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=freebsd go build -o "$@"
+	GOARCH=386 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(CMDPKG)
 
 bin/windows/386/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=windows go build -o "$@"
+	GOARCH=386 GOOS=windows go build $(LDFLAGS) -o "$@" $(CMDPKG)
 
 # amd64
 bin/freebsd/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@"
+	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(CMDPKG)
 bin/darwin/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@"
+	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@" $(CMDPKG)
 bin/linux/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@"
+	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@" $(CMDPKG)
 
 bin/windows/amd64/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@"
+	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@" $(CMDPKG)
 
 
 $(GH_RELEASE):

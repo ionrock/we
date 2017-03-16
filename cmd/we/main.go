@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/ionrock/we"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -24,9 +26,9 @@ func convertEnvForCmd(env map[string]string) []string {
 }
 
 func WeAction(c *cli.Context) error {
-	InitLogging(c.Bool("debug"))
+	we.InitLogging(c.Bool("debug"))
 	log.Debug("args: ", os.Args[1:])
-	env, err := WithEnv(os.Args[1:])
+	env, err := we.WithEnv(os.Args[1:])
 
 	log.Debug("Computed Env")
 	for k, v := range env {
