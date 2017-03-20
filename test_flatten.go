@@ -36,10 +36,10 @@ func TestLoadEnvFiles(t *testing.T) {
 	}
 
 	for _, path := range paths {
-		f := Flattener{path: path}
-		m, err := f.load(f.path)
+		f := Flattener{Path: path}
+		m, err := f.load(f.Path)
 		if err != nil {
-			t.Fatal("failed to load %q: %q", f.path, err)
+			t.Fatal("failed to load %q: %q", f.Path, err)
 		}
 
 		if _, ok := m[0]["FOO"]; ok {

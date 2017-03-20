@@ -15,7 +15,7 @@ import (
 )
 
 type Flattener struct {
-	path string
+	Path string
 }
 
 func (f Flattener) loadMap(b []byte) ([]map[string]interface{}, error) {
@@ -104,7 +104,7 @@ func (f Flattener) flattenMap(env map[string]string, ev map[string]interface{}, 
 	for k, v := range ev {
 		switch v.(type) {
 		case string:
-			value := compileValue(v.(string), f.path)
+			value := compileValue(v.(string), f.Path)
 			applyString(env, prefix, k, value)
 
 		case map[string]interface{}:
@@ -137,7 +137,7 @@ func (f Flattener) flattenMap(env map[string]string, ev map[string]interface{}, 
 // This will update this processes environment by calling os.Setenv
 // for each entry.
 func (f Flattener) Flatten() (map[string]string, error) {
-	env, err := f.load(f.path)
+	env, err := f.load(f.Path)
 	if err != nil {
 		log.Error("Error loading JSON/YAML")
 		return nil, err

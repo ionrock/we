@@ -6,6 +6,8 @@ import (
 	"os/exec"
 
 	"github.com/ionrock/we"
+	"github.com/ionrock/we/envs"
+	"github.com/spf13/viper"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -27,8 +29,21 @@ func convertEnvForCmd(env map[string]string) []string {
 
 func WeAction(c *cli.Context) error {
 	we.InitLogging(c.Bool("debug"))
-	log.Debug("args: ", os.Args[1:])
-	env, err := we.WithEnv(os.Args[1:])
+	we.InitConfig(".")
+
+	weargs := []string{}
+
+	if viper.IsSet("config_alias") {
+		log.Debug("config alias: ", viper.GetString("config_alias"))
+		weargs = append(weargs, "--alias", viper.GetString("config_alias"))
+	}
+
+	log.Debug("command args: ", os.Args[1:])
+	weargs = append(weargs, os.Args[1:]...)
+
+	log.Debug("all args: ", weargs)
+
+	env, err := envs.WithEnv(weargs)
 
 	log.Debug("Computed Env")
 	for k, v := range env {
@@ -76,6 +91,12 @@ func main() {
 
 	// NOTE: These flags are essentially ignored b/c we need ordered flags
 	app.Flags = []cli.Flag{
+
+		cli.BoolFlag{
+			Name:  "debug, D",
+			Usage: "Turn on debugging output",
+		},
+
 		cli.StringSliceFlag{
 			Name:  "env, e",
 			Usage: "A YAML/JSON file to include in the environment.",
@@ -101,11 +122,6 @@ func main() {
 		cli.StringSliceFlag{
 			Name:  "envvar, E",
 			Usage: "Override a single environment variable.",
-		},
-
-		cli.BoolFlag{
-			Name:  "debug, D",
-			Usage: "Turn on debugging output",
 		},
 
 		cli.BoolFlag{

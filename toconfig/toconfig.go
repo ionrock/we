@@ -1,4 +1,4 @@
-package we
+package toconfig
 
 import (
 	"os"
@@ -19,7 +19,6 @@ func envMap() map[string]string {
 }
 
 func ApplyConfig(t string, c string) error {
-
 	t, err := filepath.Abs(t)
 	if err != nil {
 		panic(err)
