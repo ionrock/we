@@ -12,9 +12,7 @@ type File struct {
 }
 
 func (e File) Parse() (map[string]string, error) {
-	f := we.Flattener{Path: e.path}
-
-	env, err := f.Flatten()
+	env, err := we.NewFlatEnv(e.path)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -37,30 +37,32 @@ func TestLoadEnvFiles(t *testing.T) {
 	}
 
 	for _, path := range paths {
-		f := Flattener{Path: path}
-		m, err := f.load(f.Path)
+		env, err := NewFlatEnv(path)
 		if err != nil {
-			t.Fatal("failed to load %q: %q", f.Path, err)
+			t.Fatal("failed to load %q: %q", path, err)
 		}
 
-		foo := m[0]
-		v, ok := foo["FOO"]
+		v, ok := env["FOO"]
 
 		if !ok {
-			t.Errorf("key missing FOO in %q", foo)
+			t.Errorf("key missing FOO in %q", env)
 		}
 
 		if v != "bar" {
-			t.Errorf("value is wrong: %q != bar; %q", foo["FOO"])
+			t.Errorf("value is wrong: %q != bar; %q", env["FOO"])
 		}
 	}
 }
 
 func TestFlattenKey(t *testing.T) {
+	fe := FlatEnv{}
 	prefix := []string{"FOO", "BAR", "BAZ"}
-	key := "WE"
-	result := flatKey(prefix, key)
-	expected := "FOO_BAR_BAZ_WE"
+	result, err := fe.key(prefix)
+	if err != nil {
+		t.Fatalf("error checking prefix size: %q", err)
+	}
+
+	expected := "FOO_BAR_BAZ"
 	if result != expected {
 		t.Errorf("flatKey failed: expected %q, got %q", expected, result)
 	}
@@ -98,17 +100,13 @@ func TestCompileValueNoop(t *testing.T) {
 }
 
 func TestNestedMaps(t *testing.T) {
-	f := Flattener{Path: "testdata/nested_maps.yml"}
-	env, err := f.Flatten()
+	path := "testdata/nested_maps.yml"
+	env, err := NewFlatEnv(path)
 	if err != nil {
-		t.Fatal(err)
-	}
-	v, ok := env["SERVICE_GITHUB_TOKEN"]
-	if !ok {
-		t.Error("key missing")
+		t.Fatal("failed to load %q: %q", path, err)
 	}
 
-	if v != "1234" {
-		t.Errorf("nested maps not handled: %q", env)
+	if _, ok := env["FOO_BAR_BAZ"]; !ok {
+		t.Fatalf("error getting key: %#v", env)
 	}
 }
