@@ -21,7 +21,7 @@ LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 GLIDE=$(GOPATH)/bin/glide
 
 
-we: $(SOURCES) $(GLIDE)
+we: $(SOURCES) $(GLIDE) vendor
 	go build $(LDFLAGS) -o $(EXECUTABLE) $(WEPKG)
 
 install: $(GLIDE)
@@ -29,6 +29,9 @@ install: $(GLIDE)
 
 $(GLIDE):
 	go get github.com/Masterminds/glide
+	glide i
+
+vendor:
 	glide i
 
 clean:
