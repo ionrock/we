@@ -20,6 +20,9 @@ func (e Script) Apply() map[string]string {
 	defer os.Remove(tmp.Name())
 
 	parts := we.SplitCommand(e.cmd)
+	for i := range parts {
+		parts[i] = os.ExpandEnv(parts[i])
+	}
 
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stdout = tmp
