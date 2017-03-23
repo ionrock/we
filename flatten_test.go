@@ -1,6 +1,7 @@
 package we
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -42,8 +43,15 @@ func TestLoadEnvFiles(t *testing.T) {
 			t.Fatal("failed to load %q: %q", f.Path, err)
 		}
 
-		if _, ok := m[0]["FOO"]; ok {
-			t.Errorf("incorrect map loaded: %q != bar", m[0]["FOO"])
+		foo := m[0]
+		v, ok := foo["FOO"]
+
+		if !ok {
+			t.Errorf("key missing FOO in %q", foo)
+		}
+
+		if v != "bar" {
+			t.Errorf("value is wrong: %q != bar; %q", foo["FOO"])
 		}
 	}
 }
@@ -78,7 +86,7 @@ func TestCompiledValueWithCmdAndExpansion(t *testing.T) {
 		t.Fatalf("test data missing: %q", err)
 	}
 
-	if result != string(expected) {
+	if result != string(bytes.TrimSpace(expected)) {
 		t.Errorf("compileValue failed: expected %q, got %q", expected, result)
 	}
 }
@@ -86,5 +94,21 @@ func TestCompiledValueWithCmdAndExpansion(t *testing.T) {
 func TestCompileValueNoop(t *testing.T) {
 	if compileValue("foo", "") != "foo" {
 		t.Errorf("compileValue didn't recognize there was no script")
+	}
+}
+
+func TestNestedMaps(t *testing.T) {
+	f := Flattener{Path: "testdata/nested_maps.yml"}
+	env, err := f.Flatten()
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, ok := env["SERVICE_GITHUB_TOKEN"]
+	if !ok {
+		t.Error("key missing")
+	}
+
+	if v != "1234" {
+		t.Errorf("nested maps not handled: %q", env)
 	}
 }
