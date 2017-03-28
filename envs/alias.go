@@ -50,7 +50,7 @@ func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string,
 
 	log.Debugf("Loaded alias %s with: %s", alias.path, args)
 
-	return WithEnv(args)
+	return WithEnv(args, filepath.Dir(alias.path))
 }
 
 func (alias Alias) Apply() map[string]string {

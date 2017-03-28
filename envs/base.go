@@ -27,7 +27,7 @@ func ignore(flag string) bool {
 	return ok
 }
 
-func pairs(args []string) chan Action {
+func pairs(args []string, path string) chan Action {
 	p := make(chan Action)
 
 	go func() {
@@ -46,7 +46,7 @@ func pairs(args []string) chan Action {
 				case flag == "--env" || flag == "-e":
 					action = File{path: f}
 				case flag == "--script" || flag == "-s":
-					action = Script{cmd: f}
+					action = Script{cmd: f, dir: path}
 				case flag == "--envvar" || flag == "-E":
 					action = Var{field: f}
 				case flag == "--directory" || flag == "-d":
@@ -72,10 +72,10 @@ func pairs(args []string) chan Action {
 	return p
 }
 
-func WithEnv(args []string) (map[string]string, error) {
+func WithEnv(args []string, path string) (map[string]string, error) {
 	env := make(map[string]string)
 
-	for action := range pairs(args) {
+	for action := range pairs(args, path) {
 		log.Debugf("Applying action: %#v", action)
 		env = updateEnvMap(env, action.Apply())
 	}

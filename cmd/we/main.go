@@ -43,7 +43,13 @@ func WeAction(c *cli.Context) error {
 
 	log.Debug("all args: ", weargs)
 
-	env, err := envs.WithEnv(weargs)
+	here, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting working directory: %q", err)
+		os.Exit(1)
+	}
+
+	env, err := envs.WithEnv(weargs, here)
 
 	log.Debug("Computed Env")
 	for k, v := range env {

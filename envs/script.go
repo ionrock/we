@@ -10,6 +10,7 @@ import (
 
 type Script struct {
 	cmd string
+	dir string
 }
 
 func (e Script) Apply() map[string]string {
@@ -25,6 +26,9 @@ func (e Script) Apply() map[string]string {
 	}
 
 	cmd := exec.Command(parts[0], parts[1:]...)
+	if e.dir != "" {
+		cmd.Dir = e.dir
+	}
 	cmd.Stdout = tmp
 	err = cmd.Run()
 
