@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/ionrock/we"
 	"github.com/ionrock/we/envs"
+	"github.com/ionrock/we/toconfig"
 	"github.com/spf13/viper"
 
 	log "github.com/Sirupsen/logrus"
@@ -27,10 +29,23 @@ func convertEnvForCmd(env map[string]string) []string {
 	return envlist
 }
 
+func applyTemplates(tmpls []string) error {
+	for _, tmpl := range tmpls {
+		target := strings.TrimRight(tmpl, ".tmpl")
+		err := toconfig.ApplyConfig(tmpl, target)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func WeAction(c *cli.Context) error {
 	we.InitLogging(c.Bool("debug"))
 	we.InitConfig(".")
 
+	// weargs are the combined set of commmand line args after
+	// considering automatic config like a ~/.withenv.yml.
 	weargs := []string{}
 
 	if viper.IsSet("config_alias") {
@@ -43,12 +58,15 @@ func WeAction(c *cli.Context) error {
 
 	log.Debug("all args: ", weargs)
 
+	// We want to grab our working directory as it'll be used when
+	// executing any commnds in scripts, or dynamic values (FOO=`cmd`)
 	here, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting working directory: %q", err)
 		os.Exit(1)
 	}
 
+	// Create our env
 	env, err := envs.WithEnv(weargs, here)
 
 	log.Debug("Computed Env")
@@ -71,6 +89,14 @@ func WeAction(c *cli.Context) error {
 
 	for i, arg := range args {
 		parts[i] = os.ExpandEnv(arg)
+	}
+
+	if len(c.StringSlice("template")) > 0 {
+		err = applyTemplates(c.StringSlice("template"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing template: %q", err)
+			os.Exit(1)
+		}
 	}
 
 	cmd := exec.Command(parts[0], parts[1:]...)
@@ -113,15 +139,13 @@ func main() {
 			Usage: "Execute a script that outputs YAML/JSON.",
 		},
 
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:  "directory, d",
-			Value: "",
 			Usage: "A directory containing YAML/JSON files to recursively apply to the environment.",
 		},
 
-		cli.StringFlag{
+		cli.StringSliceFlag{
 			Name:  "alias, a",
-			Value: "",
 			Usage: "A YAML file containing a list of file/directory entries to apply to the environment.",
 		},
 
@@ -133,6 +157,11 @@ func main() {
 		cli.BoolFlag{
 			Name:  "clean, c",
 			Usage: "Only use variables defined by YAML",
+		},
+
+		cli.StringSliceFlag{
+			Name:  "template, t",
+			Usage: "Apply a template.",
 		},
 	}
 
