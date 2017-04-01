@@ -34,9 +34,9 @@ func (env *FlatEnv) addString(prefix []string, value string) error {
 		return err
 	}
 
-	value = compileValue(value, env.Path)
+	value = CompileValue(value, env.Path)
 	env.Env[key] = value
-	applyString(env.Env, key, value)
+	ApplyString(env.Env, key, value)
 	return nil
 }
 
@@ -120,7 +120,7 @@ func NewFlatEnv(path string) (map[string]string, error) {
 }
 
 // TODO: return an error here...
-func compileValue(value string, path string) string {
+func CompileValue(value string, path string) string {
 	log.Debug("%#vs", value)
 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
 		parts := SplitCommand(os.ExpandEnv(strings.Trim(value, "`")))
@@ -138,7 +138,7 @@ func compileValue(value string, path string) string {
 	return value
 }
 
-func applyString(env map[string]string, key string, value string) {
+func ApplyString(env map[string]string, key string, value string) {
 	env[key] = os.ExpandEnv(value)
 	os.Setenv(key, env[key])
 	log.Debugf("setting %s to %s", key, env[key])

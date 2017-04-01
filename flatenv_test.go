@@ -81,7 +81,7 @@ func TestCompiledValueWithCmdAndExpansion(t *testing.T) {
 	path := "testdata/maps.yml"
 
 	// this should return an error!
-	result := compileValue(cmd, path)
+	result := CompileValue(cmd, path)
 
 	expected, err := ioutil.ReadFile("testdata/maps.yml")
 	if err != nil {
@@ -94,7 +94,7 @@ func TestCompiledValueWithCmdAndExpansion(t *testing.T) {
 }
 
 func TestCompileValueNoop(t *testing.T) {
-	if compileValue("foo", "") != "foo" {
+	if CompileValue("foo", "") != "foo" {
 		t.Errorf("compileValue didn't recognize there was no script")
 	}
 }
