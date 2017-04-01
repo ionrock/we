@@ -1,14 +1,16 @@
 package envs
 
 import (
-	"os"
 	"strings"
+
+	"github.com/ionrock/we"
 
 	log "github.com/Sirupsen/logrus"
 )
 
 type Var struct {
 	field string
+	dir   string
 }
 
 func (e Var) Apply() map[string]string {
@@ -18,13 +20,10 @@ func (e Var) Apply() map[string]string {
 	}
 	key := parts[0]
 	value := parts[1]
+	value = we.CompileValue(value, e.dir)
 
 	env := make(map[string]string)
-	env[key] = value
+	we.ApplyString(env, key, value)
 
-	err := os.Setenv(key, value)
-	if err != nil {
-		log.Fatal(err)
-	}
 	return env
 }
