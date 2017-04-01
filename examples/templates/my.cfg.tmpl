@@ -1,0 +1,6 @@
+[service]
+listen = {{env "LISTEN"}}
+workers =
+{{- range split " " (env "CLUSTER_HOSTS") }}
+   - {{ . }}
+{{- end }}
