@@ -21,27 +21,27 @@ func envMap() map[string]string {
 func ApplyConfig(t string, c string) error {
 	t, err := filepath.Abs(t)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	name := filepath.Base(t)
 
 	tmpl, err := template.New(name).Funcs(sprig.TxtFuncMap()).ParseFiles(t)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	fh := os.Stdout
 	if c != "" {
 		fh, err = os.Create(c)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		defer fh.Close()
 	}
 
 	err = tmpl.Execute(fh, envMap())
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return nil
 }
