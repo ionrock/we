@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -108,5 +109,29 @@ func TestNestedMaps(t *testing.T) {
 
 	if _, ok := env["FOO_BAR_BAZ"]; !ok {
 		t.Fatalf("error getting key: %#v", env)
+	}
+}
+
+func TestListValues(t *testing.T) {
+	path := "testdata/list_values.yml"
+	env, err := NewFlatEnv(path)
+	if err != nil {
+		t.Fatal("failed to load %q: %q", path, err)
+	}
+	val, ok := env["FOO"]
+	if !ok {
+		t.Fatalf("error getting key: %#v", env)
+	}
+
+	expected := []string{"one", "two", "three"}
+	result := strings.Fields(val)
+	if len(result) != len(expected) {
+		t.Fatalf("error loading list values: %d != %d", len(result), len(expected))
+	}
+
+	for i := range expected {
+		if result[i] != expected[i] {
+			t.Errorf("error in list value: %q != %q", result[i], expected[i])
+		}
 	}
 }

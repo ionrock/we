@@ -35,6 +35,10 @@ func (env *FlatEnv) addString(prefix []string, value string) error {
 	}
 
 	value = CompileValue(value, env.Path)
+
+	if _, ok := env.Env[key]; ok {
+		value = fmt.Sprintf("%s %s", env.Env[key], value)
+	}
 	env.Env[key] = value
 	ApplyString(env.Env, key, value)
 	return nil
