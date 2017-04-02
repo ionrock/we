@@ -1,6 +1,7 @@
 package toconfig
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,6 +43,29 @@ func ApplyConfig(t string, c string) error {
 	err = tmpl.Execute(fh, envMap())
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func ApplyTemplates(tmpls []string) error {
+	for _, tmpl := range tmpls {
+		var target string
+
+		if strings.Contains(tmpl, ":") {
+			parts := strings.Split(tmpl, ":")
+			if len(parts) != 2 {
+				return fmt.Errorf("template string must only have a template and target path")
+			}
+			tmpl = parts[0]
+			target = parts[1]
+
+		} else {
+			target = strings.TrimRight(tmpl, ".tmpl")
+		}
+		err := ApplyConfig(tmpl, target)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

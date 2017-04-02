@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/ionrock/we"
 	"github.com/ionrock/we/envs"
@@ -27,29 +26,6 @@ func convertEnvForCmd(env map[string]string) []string {
 	}
 
 	return envlist
-}
-
-func applyTemplates(tmpls []string) error {
-	for _, tmpl := range tmpls {
-		var target string
-
-		if strings.Contains(tmpl, ":") {
-			parts := strings.Split(tmpl, ":")
-			if len(parts) != 2 {
-				return fmt.Errorf("template string must only have a template and target path")
-			}
-			tmpl = parts[0]
-			target = parts[1]
-
-		} else {
-			target = strings.TrimRight(tmpl, ".tmpl")
-		}
-		err := toconfig.ApplyConfig(tmpl, target)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func WeAction(c *cli.Context) error {
@@ -104,7 +80,7 @@ func WeAction(c *cli.Context) error {
 	}
 
 	if len(c.StringSlice("template")) > 0 {
-		err = applyTemplates(c.StringSlice("template"))
+		err = toconfig.ApplyTemplates(c.StringSlice("template"))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing template: %q", err)
 			os.Exit(1)
