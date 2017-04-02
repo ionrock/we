@@ -31,7 +31,19 @@ func convertEnvForCmd(env map[string]string) []string {
 
 func applyTemplates(tmpls []string) error {
 	for _, tmpl := range tmpls {
-		target := strings.TrimRight(tmpl, ".tmpl")
+		var target string
+
+		if strings.Contains(tmpl, ":") {
+			parts := strings.Split(tmpl, ":")
+			if len(parts) != 2 {
+				return fmt.Errorf("template string must only have a template and target path")
+			}
+			tmpl = parts[0]
+			target = parts[1]
+
+		} else {
+			target = strings.TrimRight(tmpl, ".tmpl")
+		}
 		err := toconfig.ApplyConfig(tmpl, target)
 		if err != nil {
 			return err

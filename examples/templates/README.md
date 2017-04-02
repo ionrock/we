@@ -14,5 +14,15 @@ To try the example run:
 $ we -e env.yml -t my.cfg.tmpl cat my.cfg
 ```
 
+By default, the path of the template will be used, removing the
+`.tmpl` extension. You can also explicity define the target of file by
+using a `:`.
+
+The equivalent command using `:` would be:
+
+```
+$ we -e env.yml -t my.cfg.tmpl:my.cfg cat my.cfg
+```
+
 The (sprig)[http://masterminds.github.io/sprig/] functions are
 available for helping to manipulate values as necessary.
