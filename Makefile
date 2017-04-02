@@ -42,7 +42,7 @@ we-example: we
 	./we -e example_env.yml echo 'Hello World!'
 
 test:
-	go test
+	go test `go list ./... | grep -v vendor`
 
 $(BINDIR):
 	mkdir -p build
