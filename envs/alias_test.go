@@ -1,6 +1,7 @@
 package envs
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -20,15 +21,15 @@ var testAliasEntries = []testAliasEntry{
 }
 
 func TestLoadEntry(t *testing.T) {
-	a := Alias{path: "testdata"}
+	a := Alias{path: "testdata/myalias.yml"}
 
 	for _, test := range testAliasEntries {
 		flag, arg := a.loadEntry(test.k, test.v)
 		if test.flag != flag {
-			t.Errorf("Error with expedted: %q no %q", flag, test.flag)
+			t.Errorf("Error with expected flag: %q no %q", flag, test.flag)
 		}
-		if test.arg != arg {
-			t.Errorf("Error with expedted: %q no %q", arg, test.arg)
+		if !strings.HasSuffix(arg, test.arg) {
+			t.Errorf("Error with expected arg: %q no %q", arg, test.arg)
 		}
 	}
 }
