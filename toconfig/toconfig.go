@@ -38,20 +38,28 @@ func ApplyConfig(t string, fh io.Writer) error {
 	return nil
 }
 
+func parseTemplatePath(tmpl string) (string, string, error) {
+	var target string
+
+	if strings.Contains(tmpl, ":") {
+		parts := strings.Split(tmpl, ":")
+		if len(parts) != 2 {
+			return "", "", fmt.Errorf("template string must only have a template and target path")
+		}
+		tmpl = parts[0]
+		target = parts[1]
+	} else {
+		target = strings.TrimRight(tmpl, ".tmpl")
+	}
+
+	return tmpl, target, nil
+}
+
 func ApplyTemplates(tmpls []string) error {
 	for _, tmpl := range tmpls {
-		var target string
-
-		if strings.Contains(tmpl, ":") {
-			parts := strings.Split(tmpl, ":")
-			if len(parts) != 2 {
-				return fmt.Errorf("template string must only have a template and target path")
-			}
-			tmpl = parts[0]
-			target = parts[1]
-
-		} else {
-			target = strings.TrimRight(tmpl, ".tmpl")
+		tmpl, target, err := parseTemplatePath(tmpl)
+		if err != nil {
+			return err
 		}
 
 		fh := os.Stdout
@@ -63,7 +71,7 @@ func ApplyTemplates(tmpls []string) error {
 			defer fh.Close()
 		}
 
-		err := ApplyConfig(tmpl, fh)
+		err = ApplyConfig(tmpl, fh)
 		if err != nil {
 			return err
 		}

@@ -46,3 +46,32 @@ workers =
 		t.Errorf("wrong content: \n%q\n !=\n%q", contents, expected)
 	}
 }
+
+type tmplPathTest struct {
+	path   string
+	tmpl   string
+	target string
+}
+
+func TestParseTemplatePath(t *testing.T) {
+	tests := []tmplPathTest{
+		{"foo.cfg.tmpl", "foo.cfg.tmpl", "foo.cfg"},
+		{"foo.cfg.tmpl:foo.cfg", "foo.cfg.tmpl", "foo.cfg"},
+		{"/path/to/tmpls/foo.tmpl:/etc/my.cfg", "/path/to/tmpls/foo.tmpl", "/etc/my.cfg"},
+	}
+
+	for _, test := range tests {
+		tmpl, target, err := parseTemplatePath(test.path)
+		if err != nil {
+			t.Fatalf("failure parsing valid tmpl: %q %q", test.path, err)
+		}
+
+		if test.tmpl != tmpl {
+			t.Errorf("failure finding tmpl: %q != %q", tmpl, test.tmpl)
+		}
+
+		if test.target != target {
+			t.Errorf("failure finding target: %q != %q", target, test.target)
+		}
+	}
+}
