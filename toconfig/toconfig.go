@@ -2,6 +2,7 @@ package toconfig
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +20,7 @@ func envMap() map[string]string {
 	return result
 }
 
-func ApplyConfig(t string, c string) error {
+func ApplyConfig(t string, fh io.Writer) error {
 	t, err := filepath.Abs(t)
 	if err != nil {
 		return err
@@ -30,16 +31,6 @@ func ApplyConfig(t string, c string) error {
 	if err != nil {
 		return err
 	}
-
-	fh := os.Stdout
-	if c != "" {
-		fh, err = os.Create(c)
-		if err != nil {
-			return err
-		}
-		defer fh.Close()
-	}
-
 	err = tmpl.Execute(fh, envMap())
 	if err != nil {
 		return err
@@ -62,7 +53,17 @@ func ApplyTemplates(tmpls []string) error {
 		} else {
 			target = strings.TrimRight(tmpl, ".tmpl")
 		}
-		err := ApplyConfig(tmpl, target)
+
+		fh := os.Stdout
+		if target != "" {
+			fh, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+			defer fh.Close()
+		}
+
+		err := ApplyConfig(tmpl, fh)
 		if err != nil {
 			return err
 		}
