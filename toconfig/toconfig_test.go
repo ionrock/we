@@ -61,17 +61,39 @@ func TestParseTemplatePath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		tmpl, target, err := parseTemplatePath(test.path)
+		conf, err := parseTemplatePath(test.path)
 		if err != nil {
 			t.Fatalf("failure parsing valid tmpl: %q %q", test.path, err)
 		}
 
-		if test.tmpl != tmpl {
-			t.Errorf("failure finding tmpl: %q != %q", tmpl, test.tmpl)
+		if test.tmpl != conf.Template {
+			t.Errorf("failure finding tmpl: %q != %q", conf.Template, test.tmpl)
 		}
 
-		if test.target != target {
-			t.Errorf("failure finding target: %q != %q", target, test.target)
+		if test.target != conf.Target {
+			t.Errorf("failure finding target: %q != %q", conf.Target, test.target)
 		}
+	}
+}
+
+func TestConfigTmplFileInfo(t *testing.T) {
+	conf := ConfigTmpl{
+		Target:   "testdata/foo.cfg",
+		FileMode: "0645",
+	}
+
+	err := conf.SetPermissions()
+	if err != nil {
+		t.Fatal("error settings permissions: %q", err)
+	}
+
+	info, err := os.Stat(conf.Target)
+	if err != nil {
+		t.Fatalf("failed to get fileinfo: %q", err)
+	}
+
+	mode := os.FileMode(int(0645))
+	if info.Mode() != mode {
+		t.Errorf("failed to set mode: %q != %q", info.Mode(), mode)
 	}
 }
