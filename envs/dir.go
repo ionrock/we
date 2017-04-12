@@ -32,13 +32,17 @@ func (e Dir) Files() chan string {
 	return files
 }
 
-func (e Dir) Apply() map[string]string {
+func (e Dir) Apply() (map[string]string, error) {
 	env := make(map[string]string)
 
 	for fn := range e.Files() {
 		ef := File{fn}
-		env = updateEnvMap(env, ef.Apply())
+		newEnv, err := ef.Apply()
+		if err != nil {
+			return nil, err
+		}
+		env = updateEnvMap(env, newEnv)
 	}
 
-	return env
+	return env, nil
 }

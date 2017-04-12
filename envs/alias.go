@@ -53,11 +53,11 @@ func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string,
 	return WithEnv(args, filepath.Dir(alias.path))
 }
 
-func (alias Alias) Apply() map[string]string {
+func (alias Alias) Apply() (map[string]string, error) {
 	log.Debug("Reading: ", alias.path)
 	b, err := ioutil.ReadFile(alias.path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	entries := make([]map[string]string, 0)
@@ -66,8 +66,8 @@ func (alias Alias) Apply() map[string]string {
 
 	env, err := alias.ApplyFromMap(entries)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return env
+	return env, nil
 }

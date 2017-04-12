@@ -5,7 +5,7 @@ import (
 )
 
 type Action interface {
-	Apply() map[string]string
+	Apply() (map[string]string, error)
 }
 
 func updateEnvMap(cur, env map[string]string) map[string]string {
@@ -79,7 +79,11 @@ func WithEnv(args []string, path string) (map[string]string, error) {
 
 	for action := range pairs(args, path) {
 		log.Debugf("Applying action: %#v", action)
-		env = updateEnvMap(env, action.Apply())
+		newEnv, err := action.Apply()
+		if err != nil {
+			return nil, err
+		}
+		env = updateEnvMap(env, newEnv)
 	}
 
 	return env, nil

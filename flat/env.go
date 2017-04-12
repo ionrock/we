@@ -1,17 +1,15 @@
-package we
+package flat
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/ionrock/we/process"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -34,7 +32,10 @@ func (env *FlatEnv) addString(prefix []string, value string) error {
 		return err
 	}
 
-	value = CompileValue(value, env.Path)
+	value, err = process.CompileValue(value, env.Path)
+	if err != nil {
+		return err
+	}
 
 	if _, ok := env.Env[key]; ok {
 		value = fmt.Sprintf("%s %s", env.Env[key], value)
@@ -121,25 +122,6 @@ func NewFlatEnv(path string) (map[string]string, error) {
 		return nil, err
 	}
 	return env.Env, nil
-}
-
-// TODO: return an error here...
-func CompileValue(value string, path string) string {
-	log.Debug("%#vs", value)
-	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
-		parts := SplitCommand(os.ExpandEnv(strings.Trim(value, "`")))
-		if parts != nil {
-			cmd := exec.Command(parts[0], parts[1:]...)
-			dirname, _ := filepath.Abs(path)
-			cmd.Dir = filepath.Dir(dirname)
-			out, err := cmd.Output()
-			if err != nil {
-				log.Fatalf("Error running command: '%s' %s", parts, err)
-			}
-			return string(bytes.TrimSpace(out))
-		}
-	}
-	return value
 }
 
 func ApplyString(env map[string]string, key string, value string) {
