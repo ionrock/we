@@ -1,4 +1,4 @@
-package we
+package main
 
 import (
 	"os"

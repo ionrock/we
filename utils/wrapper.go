@@ -1,4 +1,4 @@
-package we
+package utils
 
 import (
 	"bufio"
@@ -6,9 +6,17 @@ import (
 	"os/exec"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/flynn/go-shlex"
+	shlex "github.com/flynn/go-shlex"
 	"github.com/urfave/cli"
 )
+
+func splitCmd(cmd string) []string {
+	parts, err := shlex.Split(os.ExpandEnv(cmd))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return parts
+}
 
 func RunLogged(parts ...string) error {
 	log.Debug("Running command: ", parts)
@@ -46,14 +54,6 @@ func RunLogged(parts ...string) error {
 	return cmd.Wait()
 }
 
-func SplitCommand(cmd string) []string {
-	parts, err := shlex.Split(os.ExpandEnv(cmd))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return parts
-}
-
 func RunWrapped(parts ...string) error {
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stdout = os.Stdout
@@ -64,7 +64,7 @@ func RunWrapped(parts ...string) error {
 }
 
 func NewCommand(script string) *exec.Cmd {
-	parts := SplitCommand(script)
+	parts := splitCmd(script)
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

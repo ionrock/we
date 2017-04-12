@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/ionrock/we"
 	"github.com/ionrock/we/envs"
 	"github.com/ionrock/we/toconfig"
 	"github.com/spf13/viper"
@@ -29,8 +28,8 @@ func convertEnvForCmd(env map[string]string) []string {
 }
 
 func WeAction(c *cli.Context) error {
-	we.InitLogging(c.Bool("debug"))
-	we.InitConfig(".")
+	InitLogging(c.Bool("debug"))
+	InitConfig(".")
 
 	// weargs are the combined set of commmand line args after
 	// considering automatic config like a ~/.withenv.yml.

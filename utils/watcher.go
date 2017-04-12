@@ -1,4 +1,4 @@
-package we
+package utils
 
 import (
 	"time"
@@ -12,8 +12,8 @@ type Watch struct {
 
 func (w *Watch) Start() {
 	ticker := time.NewTicker(time.Duration(w.Cadence))
-	cmd := SplitCommand(w.Command)
-	action := SplitCommand(w.Action)
+	cmd := splitCmd(w.Command)
+	action := splitCmd(w.Action)
 
 	for range ticker.C {
 		err := RunLogged(cmd...)
