@@ -47,7 +47,8 @@ func InitConfig(path string) {
 	err := viper.ReadInConfig()
 
 	if err != nil {
-		log.Fatalf("Error reading config: %q", err)
+		log.Debugf("Error reading config: %q", err)
+		return
 	}
 
 	if viper.GetBool("find_config") {
