@@ -39,7 +39,7 @@ func procDir(path string) (string, error) {
 }
 
 func CompileValue(value string, path string) (string, error) {
-	log.Debug("%#vs", value)
+	log.Debug("%#v", value)
 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
 		dirname, err := procDir(path)
 		if err != nil {
