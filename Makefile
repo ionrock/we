@@ -76,25 +76,25 @@ compress-all: $(COMPRESSED_EXECUTABLES)
 	zip "$@" "$<"
 
 # 386
-bin/darwin/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-darwin-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/linux/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-linux-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/freebsd/386/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-freebsd-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
 
-bin/windows/386/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+bin-windows-386-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
 
 # amd64
-bin/freebsd/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-freebsd-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/darwin/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-darwin-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/linux/amd64/$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin-linux-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
 
-bin/windows/amd64/$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+bin-windows-amd64-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
 
 
