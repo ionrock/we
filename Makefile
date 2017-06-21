@@ -55,11 +55,11 @@ UPLOAD_CMD = ./we -e .release.yml $(GH_RELEASE) upload -t $(LAST_TAG) -n $(subst
 OSLIST = darwin freebsd linux
 PLATS  = amd64 386
 
-EXE_TMPL     = bin/$(OS)/$(PLAT)/$(EXECUTABLE)
+EXE_TMPL     = bin/$(OS)-$(PLAT)-$(EXECUTABLE)
 EXE_TMPL_BZ2 = $(FN).tar.bz2
 
 UNIX_EXECUTABLES = $(foreach OS,$(OSLIST),$(foreach PLAT,$(PLATS),$(EXE_TMPL)))
-WIN_EXECUTABLES  = bin/windows/amd64/$(EXECUTABLE).exe
+WIN_EXECUTABLES  = bin/windows-amd64-$(EXECUTABLE).exe
 
 COMPRESSED_EXECUTABLES = $(UNIX_EXECUTABLES:%=%.tar.bz2) $(WIN_EXECUTABLES).zip
 COMPRESSED_EXECUTABLE_TARGETS = $(COMPRESSED_EXECUTABLES:%=%)
@@ -76,25 +76,25 @@ compress-all: $(COMPRESSED_EXECUTABLES)
 	zip "$@" "$<"
 
 # 386
-bin-darwin-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/darwin-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin-linux-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/linux-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin-freebsd-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/freebsd-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
 
-bin-windows-386-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+bin/windows-386-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
 	GOARCH=386 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
 
 # amd64
-bin-freebsd-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/freebsd-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin-darwin-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/darwin-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin-linux-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
+bin/linux-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
 
-bin-windows-amd64-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
+bin/windows-amd64-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
 	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
 
 
