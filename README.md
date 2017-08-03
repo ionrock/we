@@ -1,9 +1,9 @@
 Withenv
 -------
 
-Withenv takes YAML files and applies them to the environment prior to
-running a command. The idea is that rather than relying on shell
-variables being set, you can explicitly define what environment
+Withenv takes YAML/JSON files and applies them to the environment
+prior to running a command. The idea is that rather than relying on
+shell variables being set, you can explicitly define what environment
 variables you want to use.
 
 For example, here is some YAML that might be helpful when connecting
@@ -23,6 +23,6 @@ information.
 $ we -e test_user_creds.yml ansible-play install-app
 ```
 
-See the [Python Docs](https://withenv.readthedocs.org) for info.
+See the [Docs](https://withenv.readthedocs.org) for info.
 
 https://travis-ci.org/ionrock/we/builds
