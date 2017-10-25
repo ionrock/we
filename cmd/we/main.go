@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	"github.com/ionrock/we/envs"
-	"github.com/ionrock/we/toconfig"
 	"github.com/spf13/viper"
 
 	log "github.com/Sirupsen/logrus"
@@ -76,14 +75,6 @@ func WeAction(c *cli.Context) error {
 
 	for i, arg := range args {
 		parts[i] = os.ExpandEnv(arg)
-	}
-
-	if len(c.StringSlice("template")) > 0 {
-		err = toconfig.ApplyTemplates(c.StringSlice("template"))
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error writing template: %q", err)
-			os.Exit(1)
-		}
 	}
 
 	cmd := exec.Command(parts[0], parts[1:]...)

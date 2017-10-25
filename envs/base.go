@@ -22,8 +22,6 @@ func ignore(flag string) bool {
 	ignored["-D"] = true
 	ignored["--clean"] = true
 	ignored["-c"] = true
-	ignored["--template"] = true
-	ignored["-t"] = true
 
 	_, ok := ignored[flag]
 	return ok
@@ -55,6 +53,8 @@ func pairs(args []string, path string) chan Action {
 					action = Dir{path: f}
 				case flag == "--alias" || flag == "-a":
 					action = Alias{path: f}
+				case flag == "--template" || flag == "-t":
+					action = Template{config: f}
 				default:
 					action = nil
 				}

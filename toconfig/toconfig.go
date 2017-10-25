@@ -154,15 +154,24 @@ func parseTemplatePath(tmpl string) (*ConfigTmpl, error) {
 
 func ApplyTemplates(tmpls []string) error {
 	for _, tmpl := range tmpls {
-		conf, err := parseTemplatePath(tmpl)
-		if err != nil {
-			return err
-		}
-
-		err = conf.Execute()
+		err := ApplyTemplate(tmpl)
 		if err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func ApplyTemplate(tmpl string) error {
+	conf, err := parseTemplatePath(tmpl)
+	if err != nil {
+		return err
+	}
+
+	err = conf.Execute()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
