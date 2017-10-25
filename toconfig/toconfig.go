@@ -166,8 +166,6 @@ func ApplyTemplate(tmpl string) error {
 		return err
 	}
 
-	fmt.Printf("config: %#v\n", conf)
-
 	err = conf.Execute()
 	if err != nil {
 		return err
