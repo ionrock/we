@@ -12,6 +12,7 @@ type Template struct {
 }
 
 func (t Template) Apply() (map[string]string, error) {
+	fmt.Printf("config: %s\n", t.config)
 	err := toconfig.ApplyTemplate(t.config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing template: %q", err)

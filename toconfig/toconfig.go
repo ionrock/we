@@ -22,16 +22,14 @@ type ConfigTmpl struct {
 }
 
 func (conf *ConfigTmpl) Execute() error {
-	fh := os.Stdout
-	if conf.Target != "" {
-		fh, err := os.Create(conf.Target)
-		if err != nil {
-			return err
-		}
-		defer fh.Close()
+	fh, err := os.Create(conf.Target)
+	if err != nil {
+		return err
 	}
 
-	err := ApplyConfig(conf.Template, fh)
+	defer fh.Close()
+
+	err = ApplyConfig(conf.Template, fh)
 	if err != nil {
 		return err
 	}
@@ -167,6 +165,8 @@ func ApplyTemplate(tmpl string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("config: %#v\n", conf)
 
 	err = conf.Execute()
 	if err != nil {
