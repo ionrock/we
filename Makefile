@@ -1,7 +1,9 @@
 .PHONY: clean install
 
 EXECUTABLE=we
+XE_EXECUTABLE=xe
 WEPKG=./cmd/we
+XEPKG=./cmd/xe
 
 LAST_TAG := $(shell git describe --abbrev=0 --tags)
 
@@ -21,8 +23,14 @@ LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 GLIDE=$(GOPATH)/bin/glide
 
 
+all: we xe
+
 we: $(SOURCES) $(GLIDE) vendor
 	go build $(LDFLAGS) -o $(EXECUTABLE) $(WEPKG)
+
+xe: $(SOURCES) $(GLIDE) vendor
+	go build $(LDFLAGS) -o $(XE_EXECUTABLE) $(XEPKG)
+
 
 install: $(GLIDE)
 	go install $(WEPKG)

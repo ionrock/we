@@ -42,7 +42,7 @@ func RunAndWait(cmd *exec.Cmd) (int, error) {
 }
 
 func SplitCommand(cmd string) []string {
-	parts, err := shlex.Split(os.ExpandEnv(cmd))
+	parts, err := shlex.Split(strings.Trim(os.ExpandEnv(cmd), "`"))
 	if err != nil {
 		log.Fatal(err)
 	}
