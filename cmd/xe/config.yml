@@ -9,11 +9,11 @@
 
 - envscript: 'curl http://httpbin.org/ip'
 
-# - task:
-#     name: apt
-#     cmd: 'sudo apt-get update'
-#     dir: '/tmp'
+- task:
+    name: apt
+    cmd: 'echo "apt get updating..."'
+    dir: '/tmp'
 
-
-# - watch:
-#     file: /etc/cert/foo
+- watch:
+    file: /etc/cert/foo
+    action:

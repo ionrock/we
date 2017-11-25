@@ -10,8 +10,8 @@ import (
 )
 
 type Manager struct {
-	// Processes is a map with our processes
-	Processes map[string]*exec.Cmd
+	// processes is a map with our processes
+	Procs map[string]*exec.Cmd
 
 	// Output provides a prefix formatter for logging
 	Output *forego.OutletFactory
@@ -22,7 +22,22 @@ type Manager struct {
 	teardown, teardownNow forego.Barrier
 }
 
+func NewManager(of *forego.OutletFactory) *Manager {
+	return &Manager{
+		Procs:  make(map[string]*exec.Cmd),
+		Output: of,
+	}
+}
+
+func (m *Manager) Processes() map[string]*exec.Cmd {
+	return m.Procs
+}
+
 func (m *Manager) Start(name, command, dir string, env []string, of *forego.OutletFactory) error {
+	if of == nil {
+		of = m.Output
+	}
+
 	parts := SplitCommand(command)
 
 	var ps *exec.Cmd
@@ -52,7 +67,7 @@ func (m *Manager) Start(name, command, dir string, env []string, of *forego.Outl
 	// Start reading the output of the
 	pipeWait := new(sync.WaitGroup)
 	pipeWait.Add(2)
-	idx := len(m.Processes)
+	idx := len(m.Procs)
 	go of.LineReader(pipeWait, name, idx, stdout, false)
 	go of.LineReader(pipeWait, name, idx, stderr, true)
 
@@ -80,28 +95,21 @@ func (m *Manager) Start(name, command, dir string, env []string, of *forego.Outl
 
 		select {
 		case <-finished:
-			// TODO: this was to handle restarts in forego
-			// if flagRestart {
-			// 	m.startProcess(idx, procNum, proc, env, of)
-			// } else {
 			m.teardown.Fall()
-			// }
 
 		case <-m.teardown.Barrier():
-			// Forego tearing down
-
 			of.SystemOutput(fmt.Sprintf("Killing %s", name))
 			ps.Process.Kill()
 		}
 	}()
 
-	m.Processes[name] = ps
+	m.Procs[name] = ps
 
 	return nil
 }
 
 func (m *Manager) Stop(name string) error {
-	svc, ok := m.Processes[name]
+	svc, ok := m.Procs[name]
 	if !ok {
 		// should probably still throw an error here...
 		return nil
