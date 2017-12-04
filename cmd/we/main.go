@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/ionrock/we/envs"
+	"github.com/ionrock/we/process"
 	"github.com/spf13/viper"
 
 	log "github.com/Sirupsen/logrus"
@@ -87,7 +88,12 @@ func WeAction(c *cli.Context) error {
 		cmd.Env = convertEnvForCmd(env)
 	}
 
-	return cmd.Run()
+	exitStatus, err := process.RunAndWait(cmd)
+	if err != nil {
+		os.Exit(exitStatus)
+	}
+
+	return err
 }
 
 func main() {

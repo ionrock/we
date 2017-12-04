@@ -7,10 +7,39 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 	shlex "github.com/flynn/go-shlex"
 )
+
+// try to find the exit code of an error. If it is unavailable, it
+// will use 1
+func exitCode(err error) int {
+	// https://stackoverflow.com/questions/10385551/get-exit-code-go
+
+	// try to get the exit code
+	if exitError, ok := err.(*exec.ExitError); ok {
+		ws := exitError.Sys().(syscall.WaitStatus)
+		return ws.ExitStatus()
+	}
+	// This will happen (in OSX) if `name` is not available in $PATH,
+	// in this situation, exit code could not be get, and stderr will be
+	// empty string very likely, so we use the default fail code, and format err
+	// to string and set to stderr
+	return 1
+}
+
+// RunAndWait a helper to run a command and wait for it to finish
+// before returning the status code as an int.
+func RunAndWait(cmd *exec.Cmd) (int, error) {
+	err := cmd.Run()
+	if err != nil {
+		return exitCode(err), err
+	}
+
+	return 0, err
+}
 
 func SplitCommand(cmd string) []string {
 	parts, err := shlex.Split(os.ExpandEnv(cmd))

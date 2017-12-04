@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/ionrock/we/utils"
@@ -79,5 +80,17 @@ func TestCompileValueNoop(t *testing.T) {
 
 	if value != "foo" {
 		t.Errorf("compileValue didn't recognize there was no script")
+	}
+}
+
+func TestRunAndWait(t *testing.T) {
+	cmd := exec.Command("sh", "-c", "exit 2")
+	code, err := RunAndWait(cmd)
+	if code != 2 {
+		t.Errorf("did not get expected status code: %d != %d", code, 2)
+	}
+
+	if err == nil {
+		t.Errorf("expected and error with cmd: %q", cmd.Args)
 	}
 }
