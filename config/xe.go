@@ -18,6 +18,14 @@ type Task struct {
 	Dir  string `json:"dir"`
 }
 
+type Watch struct {
+	File   string
+	Action struct {
+		Restart string
+		Run     string
+	}
+}
+
 type XeConfig struct {
 	Service   *Service          `json:"service"`
 	Env       map[string]string `json:"env"`

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/ionrock/procs"
 	"github.com/ionrock/we/process/forego"
 )
 
@@ -14,7 +15,7 @@ type Manager struct {
 	Procs map[string]*exec.Cmd
 
 	// Output provides a prefix formatter for logging
-	Output *forego.OutletFactory
+	Output *procs.Output
 
 	// wg for keeping track of our process go routines
 	wg sync.WaitGroup
@@ -22,7 +23,7 @@ type Manager struct {
 	teardown, teardownNow forego.Barrier
 }
 
-func NewManager(of *forego.OutletFactory) *Manager {
+func NewManager(of *procs.Output) *Manager {
 	return &Manager{
 		Procs:  make(map[string]*exec.Cmd),
 		Output: of,
@@ -33,7 +34,7 @@ func (m *Manager) Processes() map[string]*exec.Cmd {
 	return m.Procs
 }
 
-func (m *Manager) Start(name, command, dir string, env []string, of *forego.OutletFactory) error {
+func (m *Manager) Start(name, command, dir string, env []string, of *procs.Output) error {
 	if of == nil {
 		of = m.Output
 	}
@@ -67,9 +68,9 @@ func (m *Manager) Start(name, command, dir string, env []string, of *forego.Outl
 	// Start reading the output of the
 	pipeWait := new(sync.WaitGroup)
 	pipeWait.Add(2)
-	idx := len(m.Procs)
-	go of.LineReader(pipeWait, name, idx, stdout, false)
-	go of.LineReader(pipeWait, name, idx, stderr, true)
+
+	go of.LineReader(pipeWait, name, stdout, false)
+	go of.LineReader(pipeWait, name, stderr, true)
 
 	of.SystemOutput(fmt.Sprintf("starting %s on port TODO", name))
 

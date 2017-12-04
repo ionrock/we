@@ -17,3 +17,4 @@
 - watch:
     file: /etc/cert/foo
     action:
+      restart: py-static-web

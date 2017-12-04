@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/ionrock/procs"
 	"github.com/ionrock/we/process"
-	"github.com/ionrock/we/process/forego"
 )
 
 func findLongestServiceName(cfgs []XeConfig) int {
@@ -31,7 +31,7 @@ func findLongestServiceName(cfgs []XeConfig) int {
 // ProcessManager provides an interface to the process.Manager.
 type ProcessManager interface {
 	Processes() map[string]*exec.Cmd
-	Start(name string, cmd string, dir string, env []string, of *forego.OutletFactory) error
+	Start(name string, cmd string, dir string, env []string, of *procs.Output) error
 	Stop(name string) error
 }
 
@@ -43,8 +43,9 @@ type Environment struct {
 }
 
 func NewEnvironment(cfgDir string, cfgs []XeConfig) *Environment {
-	of := forego.NewOutletFactory()
-	of.Padding = findLongestServiceName(cfgs)
+	of := &procs.Output{
+		Padding: findLongestServiceName(cfgs),
+	}
 
 	return &Environment{
 		Services:  process.NewManager(of),
