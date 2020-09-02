@@ -109,42 +109,42 @@ func main() {
 	// NOTE: These flags are essentially ignored b/c we need ordered flags
 	app.Flags = []cli.Flag{
 
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "debug, D",
 			Usage: "Turn on debugging output",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "env, e",
 			Usage: "A YAML/JSON file to include in the environment.",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "script, s",
 			Usage: "Execute a script that outputs YAML/JSON.",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "directory, d",
 			Usage: "A directory containing YAML/JSON files to recursively apply to the environment.",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "alias, a",
 			Usage: "A YAML file containing a list of file/directory entries to apply to the environment.",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "envvar, E",
 			Usage: "Override a single environment variable.",
 		},
 
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "clean, c",
 			Usage: "Only use variables defined by YAML",
 		},
 
-		cli.StringSliceFlag{
+		&cli.StringSliceFlag{
 			Name:  "template, t",
 			Usage: "Apply a template.",
 		},
