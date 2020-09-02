@@ -110,43 +110,51 @@ func main() {
 	app.Flags = []cli.Flag{
 
 		&cli.BoolFlag{
-			Name:  "debug, D",
-			Usage: "Turn on debugging output",
+			Name:    "debug",
+			Aliases: []string{"D"},
+			Usage:   "Turn on debugging output",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "env, e",
-			Usage: "A YAML/JSON file to include in the environment.",
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "A YAML/JSON file to include in the environment.",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "script, s",
-			Usage: "Execute a script that outputs YAML/JSON.",
+			Name:    "script",
+			Aliases: []string{"s"},
+			Usage:   "Execute a script that outputs YAML/JSON.",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "directory, d",
-			Usage: "A directory containing YAML/JSON files to recursively apply to the environment.",
+			Name:    "directory",
+			Aliases: []string{"d"},
+			Usage:   "A directory containing YAML/JSON files to recursively apply to the environment.",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "alias, a",
-			Usage: "A YAML file containing a list of file/directory entries to apply to the environment.",
+			Name:    "alias",
+			Aliases: []string{"a"},
+			Usage:   "A YAML file containing a list of file/directory entries to apply to the environment.",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "envvar, E",
-			Usage: "Override a single environment variable.",
+			Name:    "envvar",
+			Aliases: []string{"E"},
+			Usage:   "Override a single environment variable.",
 		},
 
 		&cli.BoolFlag{
-			Name:  "clean, c",
-			Usage: "Only use variables defined by YAML",
+			Name:    "clean",
+			Aliases: []string{"c"},
+			Usage:   "Only use variables defined by YAML",
 		},
 
 		&cli.StringSliceFlag{
-			Name:  "template, t",
-			Usage: "Apply a template.",
+			Name:    "template",
+			Aliases: []string{"t"},
+			Usage:   "Apply a template.",
 		},
 	}
 
