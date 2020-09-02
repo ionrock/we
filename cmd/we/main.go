@@ -69,12 +69,13 @@ func WeAction(c *cli.Context) error {
 	// command.
 	args := c.Args()
 
-	if len(args) == 0 {
-		args = []string{"env"}
-	}
-	parts := make([]string, len(args))
+	parts := make([]string, args.Len())
 
-	for i, arg := range args {
+	if len(parts) == 0 {
+		parts = append(parts, "env")
+	}
+
+	for i, arg := range args.Slice() {
 		parts[i] = os.ExpandEnv(arg)
 	}
 
