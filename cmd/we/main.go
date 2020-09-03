@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var builddate = ""
@@ -69,12 +69,13 @@ func WeAction(c *cli.Context) error {
 	// command.
 	args := c.Args()
 
-	if len(args) == 0 {
-		args = []string{"env"}
-	}
-	parts := make([]string, len(args))
+	parts := make([]string, args.Len())
 
-	for i, arg := range args {
+	if len(parts) == 0 {
+		parts = append(parts, "env")
+	}
+
+	for i, arg := range args.Slice() {
 		parts[i] = os.ExpandEnv(arg)
 	}
 
@@ -108,44 +109,52 @@ func main() {
 	// NOTE: These flags are essentially ignored b/c we need ordered flags
 	app.Flags = []cli.Flag{
 
-		cli.BoolFlag{
-			Name:  "debug, D",
-			Usage: "Turn on debugging output",
+		&cli.BoolFlag{
+			Name:    "debug",
+			Aliases: []string{"D"},
+			Usage:   "Turn on debugging output",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "env, e",
-			Usage: "A YAML/JSON file to include in the environment.",
+		&cli.StringSliceFlag{
+			Name:    "env",
+			Aliases: []string{"e"},
+			Usage:   "A YAML/JSON file to include in the environment.",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "script, s",
-			Usage: "Execute a script that outputs YAML/JSON.",
+		&cli.StringSliceFlag{
+			Name:    "script",
+			Aliases: []string{"s"},
+			Usage:   "Execute a script that outputs YAML/JSON.",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "directory, d",
-			Usage: "A directory containing YAML/JSON files to recursively apply to the environment.",
+		&cli.StringSliceFlag{
+			Name:    "directory",
+			Aliases: []string{"d"},
+			Usage:   "A directory containing YAML/JSON files to recursively apply to the environment.",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "alias, a",
-			Usage: "A YAML file containing a list of file/directory entries to apply to the environment.",
+		&cli.StringSliceFlag{
+			Name:    "alias",
+			Aliases: []string{"a"},
+			Usage:   "A YAML file containing a list of file/directory entries to apply to the environment.",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "envvar, E",
-			Usage: "Override a single environment variable.",
+		&cli.StringSliceFlag{
+			Name:    "envvar",
+			Aliases: []string{"E"},
+			Usage:   "Override a single environment variable.",
 		},
 
-		cli.BoolFlag{
-			Name:  "clean, c",
-			Usage: "Only use variables defined by YAML",
+		&cli.BoolFlag{
+			Name:    "clean",
+			Aliases: []string{"c"},
+			Usage:   "Only use variables defined by YAML",
 		},
 
-		cli.StringSliceFlag{
-			Name:  "template, t",
-			Usage: "Apply a template.",
+		&cli.StringSliceFlag{
+			Name:    "template",
+			Aliases: []string{"t"},
+			Usage:   "Apply a template.",
 		},
 	}
 
