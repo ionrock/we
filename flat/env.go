@@ -11,7 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/ionrock/we/process"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 type FlatEnv struct {

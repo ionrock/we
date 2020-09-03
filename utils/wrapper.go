@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	log "github.com/Sirupsen/logrus"
 	shlex "github.com/flynn/go-shlex"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 

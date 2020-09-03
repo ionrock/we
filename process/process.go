@@ -9,8 +9,8 @@ import (
 	"strings"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
 	shlex "github.com/flynn/go-shlex"
+	log "github.com/sirupsen/logrus"
 )
 
 // try to find the exit code of an error. If it is unavailable, it
@@ -68,7 +68,7 @@ func procDir(path string) (string, error) {
 }
 
 func CompileValue(value string, path string) (string, error) {
-	log.Debug("%#v", value)
+	log.Debugf("%#v", value)
 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
 		dirname, err := procDir(path)
 		if err != nil {

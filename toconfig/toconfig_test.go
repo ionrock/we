@@ -84,7 +84,7 @@ func TestConfigTmplFileInfo(t *testing.T) {
 
 	err := conf.SetPermissions()
 	if err != nil {
-		t.Fatal("error settings permissions: %q", err)
+		t.Fatalf("error settings permissions: %q", err)
 	}
 
 	info, err := os.Stat(conf.Target)

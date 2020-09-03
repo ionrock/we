@@ -9,7 +9,7 @@ import (
 	"github.com/ionrock/we/process"
 	"github.com/spf13/viper"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 

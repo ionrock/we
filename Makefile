@@ -18,28 +18,21 @@ BUILD_TIME=`date +%FT%T%z`
 VERSION=`git describe --tags --long --always --dirty`
 LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 
-GLIDE=$(GOPATH)/bin/glide
-
-
-we: $(SOURCES) $(GLIDE) vendor
+we: $(SOURCES) vendor
 	go build $(LDFLAGS) -o $(EXECUTABLE) $(WEPKG)
 
-install: $(GLIDE)
+install: vendor
 	go install $(WEPKG)
 
-$(GLIDE):
-	go get github.com/Masterminds/glide
-	glide i
-
 vendor:
-	glide i
+	go mod vendor
 
 clean:
 	rm we
 	rm -rf bin
 
 we-example: we
-	./we -e example_env.yml echo 'Hello World!'
+	sh examples/hello_world.sh
 
 test:
 	go test `go list ./... | grep -v vendor`

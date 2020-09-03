@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -60,7 +60,7 @@ func InitConfig(path string) {
 		viper.AddConfigPath(config)
 		err = viper.ReadInConfig()
 		if err != nil {
-			log.Fatal("Error reading parent config: %q", err)
+			log.Fatalf("Error reading parent config: %q", err)
 		}
 		log.Debugf("Found and loaded config: %q", config)
 

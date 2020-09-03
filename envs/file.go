@@ -3,8 +3,8 @@ package envs
 import (
 	"os"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/ionrock/we/flat"
+	log "github.com/sirupsen/logrus"
 )
 
 type File struct {
