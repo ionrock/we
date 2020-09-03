@@ -9,8 +9,8 @@ import (
 	"strings"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
 	shlex "github.com/flynn/go-shlex"
+	log "github.com/sirupsen/logrus"
 )
 
 // try to find the exit code of an error. If it is unavailable, it

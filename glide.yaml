@@ -1,6 +1,6 @@
 package: github.com/ionrock/we
 import:
-  - package: github.com/Sirupsen/logrus
+  - package: github.com/sirupsen/logrus
   - package: github.com/urfave/cli
   - package: github.com/flynn/go-shlex
   - package: github.com/ghodss/yaml
