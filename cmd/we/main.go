@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var builddate = ""

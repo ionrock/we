@@ -7,7 +7,7 @@ import (
 
 	shlex "github.com/flynn/go-shlex"
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func splitCmd(cmd string) []string {
