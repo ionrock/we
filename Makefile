@@ -21,7 +21,7 @@ LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 we: $(SOURCES) vendor
 	go build $(LDFLAGS) -o $(EXECUTABLE) $(WEPKG)
 
-install:
+install: vendor
 	go install $(WEPKG)
 
 vendor:
