@@ -7,7 +7,6 @@ import (
 
 	"github.com/ionrock/we/envs"
 	"github.com/ionrock/we/process"
-	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -29,15 +28,20 @@ func convertEnvForCmd(env map[string]string) []string {
 
 func WeAction(c *cli.Context) error {
 	InitLogging(c.Bool("debug"))
-	InitConfig(".")
+
+	log.Debug("initializing config")
+	config, err := findConfig(".")
+	if err != nil {
+		log.Debugf("No config found: %q", err)
+	}
 
 	// weargs are the combined set of commmand line args after
 	// considering automatic config like a ~/.withenv.yml.
 	weargs := []string{}
 
-	if viper.IsSet("config_alias") {
-		log.Debug("config alias: ", viper.GetString("config_alias"))
-		weargs = append(weargs, "--alias", viper.GetString("config_alias"))
+	if config != "" {
+		log.Debug("Adding config as alias: ", config)
+		weargs = append(weargs, "--alias", config)
 	}
 
 	log.Debug("command args: ", os.Args[1:])
@@ -98,64 +102,62 @@ func WeAction(c *cli.Context) error {
 }
 
 func main() {
-	app := cli.NewApp()
-	app.Version = fmt.Sprintf("%s-%s", gitref, builddate)
+	app := cli.App{
+		Name:      "we",
+		Usage:     "Add environment variables via YAML or scripts before running a command.",
+		Version:   fmt.Sprintf("%s-%s", gitref, builddate),
+		ArgsUsage: "[COMMAND]",
+		Flags: []cli.Flag{
 
-	app.Name = "we"
-	app.Usage = "Add environment variables via YAML or scripts before running a command."
-	app.ArgsUsage = "[COMMAND]"
-	app.Action = WeAction
+			&cli.BoolFlag{
+				Name:    "debug",
+				Aliases: []string{"D"},
+				Usage:   "Turn on debugging output",
+			},
 
-	// NOTE: These flags are essentially ignored b/c we need ordered flags
-	app.Flags = []cli.Flag{
+			&cli.StringSliceFlag{
+				Name:    "env",
+				Aliases: []string{"e"},
+				Usage:   "A YAML/JSON file to include in the environment.",
+			},
 
-		&cli.BoolFlag{
-			Name:    "debug",
-			Aliases: []string{"D"},
-			Usage:   "Turn on debugging output",
+			&cli.StringSliceFlag{
+				Name:    "script",
+				Aliases: []string{"s"},
+				Usage:   "Execute a script that outputs YAML/JSON.",
+			},
+
+			&cli.StringSliceFlag{
+				Name:    "directory",
+				Aliases: []string{"d"},
+				Usage:   "A directory containing YAML/JSON files to recursively apply to the environment.",
+			},
+
+			&cli.StringSliceFlag{
+				Name:    "alias",
+				Aliases: []string{"a"},
+				Usage:   "A YAML file containing a list of file/directory entries to apply to the environment.",
+			},
+
+			&cli.StringSliceFlag{
+				Name:    "envvar",
+				Aliases: []string{"E"},
+				Usage:   "Override a single environment variable.",
+			},
+
+			&cli.BoolFlag{
+				Name:    "clean",
+				Aliases: []string{"c"},
+				Usage:   "Only use variables defined by YAML",
+			},
+
+			&cli.StringSliceFlag{
+				Name:    "template",
+				Aliases: []string{"t"},
+				Usage:   "Apply a template.",
+			},
 		},
-
-		&cli.StringSliceFlag{
-			Name:    "env",
-			Aliases: []string{"e"},
-			Usage:   "A YAML/JSON file to include in the environment.",
-		},
-
-		&cli.StringSliceFlag{
-			Name:    "script",
-			Aliases: []string{"s"},
-			Usage:   "Execute a script that outputs YAML/JSON.",
-		},
-
-		&cli.StringSliceFlag{
-			Name:    "directory",
-			Aliases: []string{"d"},
-			Usage:   "A directory containing YAML/JSON files to recursively apply to the environment.",
-		},
-
-		&cli.StringSliceFlag{
-			Name:    "alias",
-			Aliases: []string{"a"},
-			Usage:   "A YAML file containing a list of file/directory entries to apply to the environment.",
-		},
-
-		&cli.StringSliceFlag{
-			Name:    "envvar",
-			Aliases: []string{"E"},
-			Usage:   "Override a single environment variable.",
-		},
-
-		&cli.BoolFlag{
-			Name:    "clean",
-			Aliases: []string{"c"},
-			Usage:   "Only use variables defined by YAML",
-		},
-
-		&cli.StringSliceFlag{
-			Name:    "template",
-			Aliases: []string{"t"},
-			Usage:   "Apply a template.",
-		},
+		Action: WeAction,
 	}
 
 	app.Run(os.Args)
