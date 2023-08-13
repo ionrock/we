@@ -2,7 +2,7 @@ package envs
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
@@ -55,7 +55,7 @@ func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string,
 
 func (alias Alias) Apply() (map[string]string, error) {
 	log.Debug("Reading: ", alias.path)
-	b, err := ioutil.ReadFile(alias.path)
+	b, err := os.ReadFile(alias.path)
 	if err != nil {
 		return nil, err
 	}
