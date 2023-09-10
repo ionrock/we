@@ -18,14 +18,14 @@ BUILD_TIME=`date +%FT%T%z`
 VERSION=`git describe --tags --long --always --dirty`
 LDFLAGS=-ldflags "-X main.builddate=$(BUILD_TIME) -X main.gitref=$(VERSION)"
 
-we: $(SOURCES) vendor
+we: $(SOURCES) tidy
 	go build $(LDFLAGS) -o $(EXECUTABLE) $(WEPKG)
 
-install: vendor
+install: tidy
 	go install $(WEPKG)
 
-vendor:
-	go mod vendor
+tidy:
+	go mod tidy
 
 clean:
 	rm we
