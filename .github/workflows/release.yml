@@ -1,8 +1,9 @@
 name: Release Binaries
 
-on: workflow_dispatch
-  # - release:
-  #     types: [published]
+on:
+  - workflow_dispatch
+  - release:
+      types: [published]
 
 
 permissions:
