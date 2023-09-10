@@ -46,7 +46,7 @@ GH_RELEASE=$(GOPATH)/bin/github-release
 UPLOAD_CMD = ./we -e .release.yml $(GH_RELEASE) upload -t $(LAST_TAG) -n $(subst /,-,$(FILE)) -f $(FILE)
 
 OSLIST = darwin freebsd linux
-PLATS  = amd64 386
+PLATS  = amd64
 
 EXE_TMPL     = bin/$(OS)-$(PLAT)-$(EXECUTABLE)
 EXE_TMPL_BZ2 = $(FN).tar.bz2
@@ -67,17 +67,6 @@ compress-all: $(COMPRESSED_EXECUTABLES)
 	tar -jcvf "$<.tar.bz2" "$<"
 %.exe.zip: %.exe
 	zip "$@" "$<"
-
-# 386
-bin/darwin-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/linux-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/freebsd-386-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
-
-bin/windows-386-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
-	GOARCH=386 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
 
 # amd64
 bin/freebsd-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
