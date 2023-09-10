@@ -4,21 +4,24 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   releases-matrix:
-    name: Release Go Binary
+    name: release binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, darwin, freebsd, win]
-        goarch: [amd64]
+        goos: [linux, darwin, win]
+        goarch: [amd64, arm64]
     steps:
-      - uses: actions/checkout@v2
-      - name: Run tests
-        run: go test -v ./...
+      - uses: actions/checkout@v3
       - uses: wangyoucao577/go-release-action@v1.40
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           project_path: "./cmd/we"
+          binary_name: "we"
