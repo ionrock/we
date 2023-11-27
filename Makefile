@@ -41,59 +41,6 @@ $(BINDIR):
 	mkdir -p build
 
 
-### Release / deploy targets
-GH_RELEASE=$(GOPATH)/bin/github-release
-UPLOAD_CMD = ./we -e .release.yml $(GH_RELEASE) upload -t $(LAST_TAG) -n $(subst /,-,$(FILE)) -f $(FILE)
-
-OSLIST = darwin freebsd linux
-PLATS  = amd64
-
-EXE_TMPL     = bin/$(OS)-$(PLAT)-$(EXECUTABLE)
-EXE_TMPL_BZ2 = $(FN).tar.bz2
-
-UNIX_EXECUTABLES = $(foreach OS,$(OSLIST),$(foreach PLAT,$(PLATS),$(EXE_TMPL)))
-WIN_EXECUTABLES  = bin/windows-amd64-$(EXECUTABLE).exe
-
-COMPRESSED_EXECUTABLES = $(UNIX_EXECUTABLES:%=%.tar.bz2) $(WIN_EXECUTABLES).zip
-COMPRESSED_EXECUTABLE_TARGETS = $(COMPRESSED_EXECUTABLES:%=%)
-
-all: $(UNIX_EXECUTABLES) $(WIN_EXECUTABLES)
-
-compress-all: $(COMPRESSED_EXECUTABLES)
-
-# compressed artifacts, makes a huge difference (Go executable is ~9MB,
-# after compressing ~2MB)
-%.tar.bz2: %
-	tar -jcvf "$<.tar.bz2" "$<"
-%.exe.zip: %.exe
-	zip "$@" "$<"
-
-# amd64
-bin/freebsd-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=freebsd go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/darwin-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=darwin go build $(LDFLAGS) -o "$@" $(WEPKG)
-bin/linux-amd64-$(EXECUTABLE): $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=linux go build $(LDFLAGS) -o "$@" $(WEPKG)
-
-bin/windows-amd64-$(EXECUTABLE).exe: $(GLIDE) $(SOURCES)
-	GOARCH=amd64 GOOS=windows go build $(LDFLAGS) -o "$@" $(WEPKG)
-
-
-$(GH_RELEASE):
-	go get github.com/aktau/github-release
-	go install github.com/aktau/github-release
-
-release: $(GH_RELEASE) $(EXECUTABLE) $(COMPRESSED_EXECUTABLES)
-	@echo "All targets $(COMPRESSED_EXECUTABLES)"
-	./we -e .release.yml $(GH_RELEASE) release -t $(LAST_TAG) -n $(LAST_TAG) || true
-	$(foreach FILE,$(COMPRESSED_EXECUTABLES),$(UPLOAD_CMD);)
-
-$(BUMP):
-	virtualenv $(VENV)
-	$(VENV)/bin/pip install --upgrade pip
-	$(VENV)/bin/pip install bumpversion
-
-bump: $(BUMP)
-	$(VENV)/bin/bumpversion $(BUMPTYPE)
-	git push && git push --tags
+.PHONY: goreleaser
+goreleaser:
+	go install github.com/goreleaser/goreleaser@latest
