@@ -58,6 +58,7 @@ func TestParseTemplatePath(t *testing.T) {
 		{"foo.cfg.tmpl", "foo.cfg.tmpl", "foo.cfg"},
 		{"foo.cfg.tmpl:foo.cfg", "foo.cfg.tmpl", "foo.cfg"},
 		{"/path/to/tmpls/foo.tmpl:/etc/my.cfg", "/path/to/tmpls/foo.tmpl", "/etc/my.cfg"},
+		{"foo.yml.tmpl", "foo.yml.tmpl", "foo.yml"},
 	}
 
 	for _, test := range tests {

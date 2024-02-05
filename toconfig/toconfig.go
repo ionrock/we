@@ -141,7 +141,7 @@ func parseTemplatePath(tmpl string) (*ConfigTmpl, error) {
 		tmpl = parts[0]
 		target = parts[1]
 	} else {
-		target = strings.TrimRight(tmpl, ".tmpl")
+		target = strings.TrimSuffix(tmpl, ".tmpl")
 	}
 
 	return &ConfigTmpl{
