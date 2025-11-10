@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	shlex "github.com/flynn/go-shlex"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 // try to find the exit code of an error. If it is unavailable, it
@@ -44,7 +44,7 @@ func RunAndWait(cmd *exec.Cmd) (int, error) {
 func SplitCommand(cmd string) []string {
 	parts, err := shlex.Split(os.ExpandEnv(cmd))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Failed to split command")
 	}
 	return parts
 }
@@ -68,7 +68,7 @@ func procDir(path string) (string, error) {
 }
 
 func CompileValue(value string, path string) (string, error) {
-	log.Debugf("%#v", value)
+	log.Debug().Msgf("%#v", value)
 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
 		dirname, err := procDir(path)
 		if err != nil {
@@ -153,7 +153,7 @@ func execute(output_buffer *bytes.Buffer, stack ...*exec.Cmd) error {
 	stack[i].Stderr = &errbuf
 
 	if err := call(stack, pipe_stack); err != nil {
-		log.Debug(string(errbuf.Bytes()))
+		log.Debug().Msg(string(errbuf.Bytes()))
 		return err
 	}
 	return nil
@@ -191,7 +191,7 @@ func findCmds(cmdstr string) []*exec.Cmd {
 	}
 
 	for _, c := range cmds {
-		log.Debugf("Parsed cmd: %s", c)
+		log.Debug().Msgf("Parsed cmd: %s", c)
 	}
 	return cmds
 }

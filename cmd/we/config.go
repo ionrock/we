@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -22,10 +22,10 @@ func findConfig(curdir string) (string, error) {
 		return "", nil
 	}
 
-	log.Debugf("abs path: %q", curdir)
+	log.Debug().Msgf("abs path: %q", curdir)
 
 	config := filepath.Join(curdir, configFilename)
-	log.Debugf("in findConfig: %q", config)
+	log.Debug().Msgf("in findConfig: %q", config)
 	if _, err := os.Stat(config); os.IsNotExist(err) {
 		if curdir == root {
 			return "", err

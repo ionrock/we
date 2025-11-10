@@ -6,49 +6,49 @@ import (
 	"os/exec"
 
 	shlex "github.com/flynn/go-shlex"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli"
 )
 
 func splitCmd(cmd string) []string {
 	parts, err := shlex.Split(os.ExpandEnv(cmd))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Failed to split command")
 	}
 	return parts
 }
 
 func RunLogged(parts ...string) error {
-	log.Debug("Running command: ", parts)
+	log.Debug().Msgf("Running command: %v", parts)
 	cmd := exec.Command(parts[0], parts[1:]...)
 
 	o, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal("Error creating stdout pipe: ", err)
+		log.Fatal().Err(err).Msg("Error creating stdout pipe")
 	}
 
 	e, err := cmd.StderrPipe()
 	if err != nil {
-		log.Fatal("Error creating stderr pipe: ", err)
+		log.Fatal().Err(err).Msg("Error creating stderr pipe")
 	}
 
 	stdout := bufio.NewScanner(o)
 	stderr := bufio.NewScanner(e)
 	go func() {
 		for stdout.Scan() {
-			log.Info(stdout.Text())
+			log.Info().Msg(stdout.Text())
 		}
 	}()
 
 	go func() {
 		for stderr.Scan() {
-			log.Info(stderr.Text())
+			log.Info().Msg(stderr.Text())
 		}
 	}()
 
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal("Error starting cmd: ", err)
+		log.Fatal().Err(err).Msg("Error starting cmd")
 	}
 
 	return cmd.Wait()

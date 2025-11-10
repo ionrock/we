@@ -1,17 +1,20 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
+	"os"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func InitLogging(debug bool) {
-	log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, TimeFormat: "2006-01-02T15:04:05.999Z07:00"})
 
 	if debug == true {
-		log.SetLevel(log.DebugLevel)
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
-		log.SetLevel(log.InfoLevel)
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
-	log.Debug("Logging debug configured")
+	log.Debug().Msg("Logging debug configured")
 }

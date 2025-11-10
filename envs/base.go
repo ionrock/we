@@ -1,7 +1,7 @@
 package envs
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type Action interface {
@@ -78,7 +78,7 @@ func WithEnv(args []string, path string) (map[string]string, error) {
 	env := make(map[string]string)
 
 	for action := range pairs(args, path) {
-		log.Debugf("Applying action: %#v", action)
+		log.Debug().Msgf("Applying action: %#v", action)
 		newEnv, err := action.Apply()
 		if err != nil {
 			return nil, err

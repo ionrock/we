@@ -8,7 +8,7 @@ import (
 	"github.com/ionrock/we/envs"
 	"github.com/ionrock/we/process"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -29,10 +29,10 @@ func convertEnvForCmd(env map[string]string) []string {
 func WeAction(c *cli.Context) error {
 	InitLogging(c.Bool("debug"))
 
-	log.Debug("initializing config")
+	log.Debug().Msg("initializing config")
 	config, err := findConfig(".")
 	if err != nil {
-		log.Debugf("No config found: %q", err)
+		log.Debug().Msgf("No config found: %q", err)
 	}
 
 	// weargs are the combined set of commmand line args after
@@ -40,14 +40,14 @@ func WeAction(c *cli.Context) error {
 	weargs := []string{}
 
 	if config != "" {
-		log.Debug("Adding config as alias: ", config)
+		log.Debug().Msgf("Adding config as alias: %s", config)
 		weargs = append(weargs, "--alias", config)
 	}
 
-	log.Debug("command args: ", os.Args[1:])
+	log.Debug().Msgf("command args: %v", os.Args[1:])
 	weargs = append(weargs, os.Args[1:]...)
 
-	log.Debug("all args: ", weargs)
+	log.Debug().Msgf("all args: %v", weargs)
 
 	// We want to grab our working directory as it'll be used when
 	// executing any commnds in scripts, or dynamic values (FOO=`cmd`)
@@ -60,9 +60,9 @@ func WeAction(c *cli.Context) error {
 	// Create our env
 	env, err := envs.WithEnv(weargs, here)
 
-	log.Debug("Computed Env")
+	log.Debug().Msg("Computed Env")
 	for k, v := range env {
-		log.Debugf("export %s=%s", k, v)
+		log.Debug().Msgf("export %s=%s", k, v)
 	}
 
 	if err != nil {
@@ -89,7 +89,7 @@ func WeAction(c *cli.Context) error {
 	cmd.Stdin = os.Stdin
 
 	if c.Bool("clean") {
-		log.Debugf("Cleaning env: %s", env)
+		log.Debug().Msgf("Cleaning env: %v", env)
 		cmd.Env = convertEnvForCmd(env)
 	}
 

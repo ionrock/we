@@ -11,7 +11,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/ionrock/we/process"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type FlatEnv struct {
@@ -127,5 +127,5 @@ func NewFlatEnv(path string) (map[string]string, error) {
 func ApplyString(env map[string]string, key string, value string) {
 	env[key] = os.ExpandEnv(value)
 	os.Setenv(key, env[key])
-	log.Debugf("setting %s to %s", key, env[key])
+	log.Debug().Msgf("setting %s to %s", key, env[key])
 }

@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/ionrock/we/flat"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 type File struct {
@@ -14,7 +14,7 @@ type File struct {
 func (e File) Parse() (map[string]string, error) {
 	env, err := flat.NewFlatEnv(e.path)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Failed to parse flat environment")
 	}
 
 	return env, nil
@@ -27,7 +27,7 @@ func (e File) Apply() (map[string]string, error) {
 	}
 
 	for k, v := range env {
-		log.Debugf("Setting: %s to %s", k, os.ExpandEnv(v))
+		log.Debug().Msgf("Setting: %s to %s", k, os.ExpandEnv(v))
 		err = os.Setenv(k, os.ExpandEnv(v))
 		if err != nil {
 			return nil, err

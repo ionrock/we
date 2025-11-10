@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -16,7 +16,7 @@ func fileLocalPath(envPath string, path string) string {
 
 	abspath, err := filepath.Abs(filepath.Dir(envPath))
 	if err != nil {
-		log.Error("Error making file path absolute to env file", err)
+		log.Error().Err(err).Msg("Error making file path absolute to env file")
 		return path
 	}
 	return filepath.Join(abspath, path)
@@ -48,13 +48,13 @@ func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string,
 		}
 	}
 
-	log.Debugf("Loaded alias %s with: %s", alias.path, args)
+	log.Debug().Msgf("Loaded alias %s with: %v", alias.path, args)
 
 	return WithEnv(args, filepath.Dir(alias.path))
 }
 
 func (alias Alias) Apply() (map[string]string, error) {
-	log.Debug("Reading: ", alias.path)
+	log.Debug().Msgf("Reading: %s", alias.path)
 	b, err := os.ReadFile(alias.path)
 	if err != nil {
 		return nil, err
