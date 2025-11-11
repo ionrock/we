@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/ionrock/we/envs"
+	"github.com/ionrock/we/envscript"
 	"github.com/ionrock/we/process"
 
 	"github.com/rs/zerolog/log"
@@ -101,12 +102,62 @@ func WeAction(c *cli.Context) error {
 	return err
 }
 
+func ConvertAction(c *cli.Context) error {
+	InitLogging(c.Bool("debug"))
+
+	if c.NArg() == 0 {
+		return fmt.Errorf("please provide a path to an env script file")
+	}
+
+	inputPath := c.Args().Get(0)
+	outputPath := c.String("output")
+
+	log.Debug().Msgf("Converting %s to YAML", inputPath)
+
+	yamlData, err := envscript.ParseAndConvert(inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to convert file: %w", err)
+	}
+
+	if outputPath != "" {
+		err = os.WriteFile(outputPath, yamlData, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to write output file: %w", err)
+		}
+		log.Debug().Msgf("Wrote YAML to %s", outputPath)
+	} else {
+		fmt.Print(string(yamlData))
+	}
+
+	return nil
+}
+
 func main() {
 	app := cli.App{
 		Name:      "we",
 		Usage:     "Add environment variables via YAML or scripts before running a command.",
 		Version:   fmt.Sprintf("%s-%s", gitref, builddate),
 		ArgsUsage: "[COMMAND]",
+		Commands: []*cli.Command{
+			{
+				Name:      "convert",
+				Usage:     "Convert an env script file (.env, .envrc, etc.) to YAML",
+				ArgsUsage: "<input-file>",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output file path (defaults to stdout)",
+					},
+					&cli.BoolFlag{
+						Name:    "debug",
+						Aliases: []string{"D"},
+						Usage:   "Turn on debugging output",
+					},
+				},
+				Action: ConvertAction,
+			},
+		},
 		Flags: []cli.Flag{
 
 			&cli.BoolFlag{
