@@ -30,6 +30,18 @@ func convertEnvForCmd(env map[string]string) []string {
 func WeAction(c *cli.Context) error {
 	InitLogging(c.Bool("debug"))
 
+	// Load .envrc-managed variables first so explicit we flags can override.
+	here, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting working directory: %q", err)
+		os.Exit(1)
+	}
+
+	envrcEnv, err := envs.MaybeLoadEnvrc(here, c.Bool("no-direnv"))
+	if err != nil {
+		return err
+	}
+
 	log.Debug().Msg("initializing config")
 	config, err := findConfig(".")
 	if err != nil {
@@ -50,16 +62,13 @@ func WeAction(c *cli.Context) error {
 
 	log.Debug().Msgf("all args: %v", weargs)
 
-	// We want to grab our working directory as it'll be used when
-	// executing any commnds in scripts, or dynamic values (FOO=`cmd`)
-	here, err := os.Getwd()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting working directory: %q", err)
-		os.Exit(1)
-	}
-
 	// Create our env
 	env, err := envs.WithEnv(weargs, here)
+	for k, v := range envrcEnv {
+		if _, ok := env[k]; !ok {
+			env[k] = v
+		}
+	}
 
 	log.Debug().Msg("Computed Env")
 	for k, v := range env {
@@ -200,6 +209,11 @@ func main() {
 				Name:    "clean",
 				Aliases: []string{"c"},
 				Usage:   "Only use variables defined by YAML",
+			},
+
+			&cli.BoolFlag{
+				Name:  "no-direnv",
+				Usage: "Disable automatic .envrc loading",
 			},
 
 			&cli.StringSliceFlag{

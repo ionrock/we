@@ -244,4 +244,33 @@ environment variables. With this in place, a developer can simply run
 also be used reliably for CI jobs to help ensure the same settings are
 correct when using automation.
 
+
+`.envrc` Auto Loading
+=====================
+
+When `we` starts, it now also looks for a `.envrc` file in the current
+directory and walks upward until one is found. If found, `we` parses
+the file for assignment lines (`export KEY=value` and `KEY=value`) and
+loads those variables before applying any `we` flags.
+
+Precedence is:
+
+1. Current shell environment
+2. `.envrc` values parsed and loaded by `we`
+3. Explicit `we` flags (`-e`, `-d`, `-a`, `-E`, `-s`, `-t`) from left to right
+
+This means explicit `we` inputs still override `.envrc` values.
+
+To disable this behavior for a single invocation:
+
+.. code-block:: bash
+
+   $ we --no-direnv --env env.yml printenv
+
+To disable via environment variable:
+
+.. code-block:: bash
+
+   $ WE_NO_DIRENV=1 we --env env.yml printenv
+
 Take a look at the examples for more interesting uses for `we` that

@@ -22,6 +22,7 @@ func ignore(flag string) bool {
 	ignored["-D"] = true
 	ignored["--clean"] = true
 	ignored["-c"] = true
+	ignored["--no-direnv"] = true
 
 	_, ok := ignored[flag]
 	return ok

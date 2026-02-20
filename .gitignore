@@ -1,5 +1,5 @@
 .glide
 bin
 vendor
-we
+/we
 .ghtoken.yml
