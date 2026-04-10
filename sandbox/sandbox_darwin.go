@@ -34,12 +34,12 @@ func (s *DarwinSandbox) buildProfile() string {
 	b.WriteString("(version 1)\n")
 	b.WriteString("(allow default)\n")
 
-	// Deny rules
+	// Deny rules -- (with no-report) suppresses sandbox violation logging
 	for _, rule := range s.config.Deny {
 		if rule.Dir {
-			fmt.Fprintf(&b, "(deny file-read* (subpath %q))\n", rule.Path)
+			fmt.Fprintf(&b, "(deny file-read* (subpath %q) (with no-report))\n", rule.Path)
 		} else {
-			fmt.Fprintf(&b, "(deny file-read* (literal %q))\n", rule.Path)
+			fmt.Fprintf(&b, "(deny file-read* (literal %q) (with no-report))\n", rule.Path)
 		}
 	}
 
@@ -54,7 +54,7 @@ func (s *DarwinSandbox) buildProfile() string {
 
 	// Optional network restriction
 	if s.config.DenyNet {
-		b.WriteString("(deny network*)\n")
+		b.WriteString("(deny network* (with no-report))\n")
 	}
 
 	return b.String()
