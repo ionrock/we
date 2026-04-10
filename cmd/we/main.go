@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 
 	"github.com/ionrock/we/envs"
 	"github.com/ionrock/we/envscript"
 	"github.com/ionrock/we/process"
+	"github.com/ionrock/we/sandbox"
 
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -91,6 +94,167 @@ func WeAction(c *cli.Context) error {
 
 	for i, arg := range args.Slice() {
 		parts[i] = os.ExpandEnv(arg)
+	}
+
+	// Agent mode: set up sandbox and hooks
+	if c.Bool("agent") {
+		log.Debug().Msg("Agent mode enabled")
+
+		// Collect sensitive paths from config
+		var sensitivePaths []string
+		if config != "" {
+			paths, err := sandbox.CollectWithenvPaths(config)
+			if err != nil {
+				log.Debug().Err(err).Msg("error collecting withenv paths")
+			} else {
+				sensitivePaths = append(sensitivePaths, paths...)
+			}
+		}
+
+		// Collect .envrc path
+		envrcPath, _ := sandbox.CollectEnvrcPath(here)
+		if envrcPath != "" {
+			sensitivePaths = append(sensitivePaths, envrcPath)
+		}
+
+		// Build sandbox config
+		sbCfg := sandbox.Config{
+			Deny:    sandbox.DefaultDenyPaths(),
+			DenyNet: c.Bool("sandbox-deny-network"),
+		}
+
+		// Add withenv-referenced paths to deny list
+		for _, p := range sensitivePaths {
+			info, err := os.Stat(p)
+			if err != nil {
+				continue
+			}
+			sbCfg.Deny = append(sbCfg.Deny, sandbox.DenyRule{
+				Path: p,
+				Dir:  info.IsDir(),
+			})
+		}
+
+		// Add CLI deny overrides
+		for _, p := range c.StringSlice("sandbox-deny") {
+			resolved, err := sandbox.ResolvePath(p)
+			if err != nil {
+				log.Debug().Err(err).Str("path", p).Msg("skipping deny path")
+				continue
+			}
+			info, statErr := os.Stat(resolved)
+			sbCfg.Deny = append(sbCfg.Deny, sandbox.DenyRule{
+				Path: resolved,
+				Dir:  statErr == nil && info.IsDir(),
+			})
+		}
+
+		// Add CLI allow overrides
+		for _, p := range c.StringSlice("sandbox-allow") {
+			resolved, err := sandbox.ResolvePath(p)
+			if err != nil {
+				log.Debug().Err(err).Str("path", p).Msg("skipping allow path")
+				continue
+			}
+			info, statErr := os.Stat(resolved)
+			sbCfg.Allow = append(sbCfg.Allow, sandbox.AllowRule{
+				Path: resolved,
+				Dir:  statErr == nil && info.IsDir(),
+			})
+		}
+
+		// Parse sandbox config from .withenv.yml
+		var skipPrefix []string
+		if config != "" {
+			userCfg, err := sandbox.ParseSandboxConfig(config)
+			if err == nil && userCfg != nil {
+				for _, p := range userCfg.Deny {
+					resolved, err := sandbox.ResolvePath(p)
+					if err != nil {
+						continue
+					}
+					info, statErr := os.Stat(resolved)
+					sbCfg.Deny = append(sbCfg.Deny, sandbox.DenyRule{
+						Path: resolved,
+						Dir:  statErr == nil && info.IsDir(),
+					})
+				}
+				for _, p := range userCfg.Allow {
+					resolved, err := sandbox.ResolvePath(p)
+					if err != nil {
+						continue
+					}
+					info, statErr := os.Stat(resolved)
+					sbCfg.Allow = append(sbCfg.Allow, sandbox.AllowRule{
+						Path: resolved,
+						Dir:  statErr == nil && info.IsDir(),
+					})
+				}
+				if userCfg.DenyNetwork {
+					sbCfg.DenyNet = true
+				}
+				skipPrefix = userCfg.SkipPrefix
+			}
+		}
+
+		// Set up Claude Code hooks for env re-evaluation
+		weBin, _ := os.Executable()
+		if weBin == "" {
+			weBin = "we"
+		}
+
+		hooksCfg := sandbox.HooksConfig{
+			WeBinary:   weBin,
+			SkipPrefix: skipPrefix,
+			ProjectDir: here,
+		}
+
+		cleanup, err := sandbox.WriteProjectSettings(hooksCfg)
+		if err != nil {
+			return fmt.Errorf("setting up agent hooks: %w", err)
+		}
+
+		// Register cleanup on exit and signals
+		defer cleanup()
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-sigCh
+			cleanup()
+			os.Exit(1)
+		}()
+
+		// Create and apply filesystem sandbox
+		sb, err := sandbox.New(sbCfg)
+		if err != nil {
+			cleanup()
+			return fmt.Errorf("creating sandbox: %w", err)
+		}
+
+		wrappedCmd, wrappedArgs, err := sb.Wrap(parts[0], parts[1:])
+		if err != nil {
+			cleanup()
+			return fmt.Errorf("wrapping command in sandbox: %w", err)
+		}
+
+		log.Debug().Str("cmd", wrappedCmd).Strs("args", wrappedArgs).Msg("launching sandboxed agent")
+
+		cmd := exec.Command(wrappedCmd, wrappedArgs...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+
+		if c.Bool("clean") {
+			cmd.Env = convertEnvForCmd(env)
+		}
+
+		exitStatus, err := process.RunAndWait(cmd)
+		cleanup()
+		if err != nil {
+			os.Exit(exitStatus)
+		}
+
+		return err
 	}
 
 	cmd := exec.Command(parts[0], parts[1:]...)
@@ -214,6 +378,26 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "no-direnv",
 				Usage: "Disable automatic .envrc loading",
+			},
+
+			&cli.BoolFlag{
+				Name:  "agent",
+				Usage: "Run command in a sandboxed environment for AI agents",
+			},
+
+			&cli.StringSliceFlag{
+				Name:  "sandbox-deny",
+				Usage: "Additional paths to deny in agent sandbox",
+			},
+
+			&cli.StringSliceFlag{
+				Name:  "sandbox-allow",
+				Usage: "Paths to allow as exceptions to sandbox deny rules",
+			},
+
+			&cli.BoolFlag{
+				Name:  "sandbox-deny-network",
+				Usage: "Also restrict network access in agent sandbox",
 			},
 
 			&cli.StringSliceFlag{

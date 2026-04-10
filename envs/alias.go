@@ -60,9 +60,25 @@ func (alias Alias) Apply() (map[string]string, error) {
 		return nil, err
 	}
 
-	entries := make([]map[string]string, 0)
+	// Use flexible unmarshaling to handle non-string entries (e.g., sandbox:)
+	var flexEntries []map[string]interface{}
+	if err := yaml.Unmarshal(b, &flexEntries); err != nil {
+		return nil, err
+	}
 
-	yaml.Unmarshal(b, &entries)
+	// Filter to only string-valued entries
+	entries := make([]map[string]string, 0)
+	for _, entry := range flexEntries {
+		strEntry := make(map[string]string)
+		for k, v := range entry {
+			if sv, ok := v.(string); ok {
+				strEntry[k] = sv
+			}
+		}
+		if len(strEntry) > 0 {
+			entries = append(entries, strEntry)
+		}
+	}
 
 	env, err := alias.ApplyFromMap(entries)
 	if err != nil {
