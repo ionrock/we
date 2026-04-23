@@ -217,6 +217,9 @@ We can then run our command with a shortened `we` command.
 Loading Defaults
 ================
 
+Withenv first checks for a global env file at `~/.withenv_global.yml`.
+If it exists, it is loaded first.
+
 Withenv can look for a default alias file called `.withenv.yml`. When
 `we` starts, it will look for a config `.withenv.yml` in the current
 directory or in your `$HOME` directory. The main `.withenv.yml` can
@@ -256,10 +259,11 @@ loads those variables before applying any `we` flags.
 Precedence is:
 
 1. Current shell environment
-2. `.envrc` values parsed and loaded by `we`
-3. Explicit `we` flags (`-e`, `-d`, `-a`, `-E`, `-s`, `-t`) from left to right
+2. `~/.withenv_global.yml` (if present)
+3. `.envrc` values parsed and loaded by `we`
+4. Explicit `we` flags (`-e`, `-d`, `-a`, `-E`, `-s`, `-t`) from left to right
 
-This means explicit `we` inputs still override `.envrc` values.
+This means explicit `we` inputs still override both global defaults and `.envrc` values.
 
 To disable this behavior for a single invocation:
 

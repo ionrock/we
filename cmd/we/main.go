@@ -18,13 +18,23 @@ var gitref = ""
 
 func convertEnvForCmd(env map[string]string) []string {
 	envlist := []string{}
-	for key, _ := range env {
+	for key := range env {
 		if key != "" && os.Getenv(key) != "" {
 			envlist = append(envlist, fmt.Sprintf("%s=%s", key, os.Getenv(key)))
 		}
 	}
 
 	return envlist
+}
+
+func mergeEnv(dst, src map[string]string) map[string]string {
+	if dst == nil {
+		dst = make(map[string]string)
+	}
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
 }
 
 func WeAction(c *cli.Context) error {
@@ -49,7 +59,7 @@ func WeAction(c *cli.Context) error {
 	}
 
 	// weargs are the combined set of commmand line args after
-	// considering automatic config like a ~/.withenv.yml.
+	// considering automatic config like ~/.withenv.yml.
 	weargs := []string{}
 
 	if config != "" {
@@ -62,13 +72,32 @@ func WeAction(c *cli.Context) error {
 
 	log.Debug().Msgf("all args: %v", weargs)
 
-	// Create our env
-	env, err := envs.WithEnv(weargs, here)
-	for k, v := range envrcEnv {
-		if _, ok := env[k]; !ok {
-			env[k] = v
-		}
+	// Create our env with this precedence:
+	// 1) ~/.withenv_global.yml (if present)
+	// 2) .envrc values
+	// 3) explicit withenv inputs (config alias + flags)
+	env := map[string]string{}
+
+	globalEnv, err := findGlobalEnv()
+	if err != nil {
+		log.Debug().Msgf("Unable to resolve global env: %q", err)
 	}
+	if globalEnv != "" {
+		log.Debug().Msgf("Loading global env: %s", globalEnv)
+		globalVals, err := envs.WithEnv([]string{"--env", globalEnv}, here)
+		if err != nil {
+			return err
+		}
+		env = mergeEnv(env, globalVals)
+	}
+
+	env = mergeEnv(env, envrcEnv)
+
+	explicitEnv, err := envs.WithEnv(weargs, here)
+	if err != nil {
+		return err
+	}
+	env = mergeEnv(env, explicitEnv)
 
 	log.Debug().Msg("Computed Env")
 	for k, v := range env {

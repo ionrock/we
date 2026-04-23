@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	configFilename = ".withenv.yml"
+	configFilename    = ".withenv.yml"
+	globalEnvFilename = ".withenv_global.yml"
 )
 
 func findConfig(curdir string) (string, error) {
@@ -35,4 +36,21 @@ func findConfig(curdir string) (string, error) {
 	}
 
 	return filepath.Abs(config)
+}
+
+func findGlobalEnv() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	globalPath := filepath.Join(home, globalEnvFilename)
+	if _, err := os.Stat(globalPath); err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	return filepath.Abs(globalPath)
 }
