@@ -23,6 +23,8 @@ func ignore(flag string) bool {
 	ignored["--clean"] = true
 	ignored["-c"] = true
 	ignored["--no-direnv"] = true
+	ignored["--agent"] = true
+	ignored["--sandbox-deny-network"] = true
 
 	_, ok := ignored[flag]
 	return ok
@@ -56,6 +58,10 @@ func pairs(args []string, path string) chan Action {
 					action = Alias{path: f}
 				case flag == "--template" || flag == "-t":
 					action = Template{config: f}
+				case flag == "--sandbox-deny" || flag == "--sandbox-allow":
+					// Skip sandbox flags -- handled by WeAction
+					flag = ""
+					continue
 				default:
 					action = nil
 				}
