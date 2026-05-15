@@ -19,6 +19,19 @@ import (
 var builddate = ""
 var gitref = ""
 
+func versionString() string {
+	if gitref == "" && builddate == "" {
+		return "dev"
+	}
+	if gitref == "" {
+		return builddate
+	}
+	if builddate == "" {
+		return gitref
+	}
+	return fmt.Sprintf("%s-%s", gitref, builddate)
+}
+
 func convertEnvForCmd(env map[string]string) []string {
 	envlist := []string{}
 	for key := range env {
@@ -338,7 +351,7 @@ func main() {
 	app := cli.App{
 		Name:      "we",
 		Usage:     "Add environment variables via YAML or scripts before running a command.",
-		Version:   fmt.Sprintf("%s-%s", gitref, builddate),
+		Version:   versionString(),
 		ArgsUsage: "[COMMAND]",
 		Commands: []*cli.Command{
 			{
