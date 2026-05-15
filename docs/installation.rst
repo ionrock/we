@@ -2,14 +2,12 @@
 Installation
 ============
 
-At the command line::
+Using Homebrew::
 
-    $ easy_install withenv
+    $ brew install ionrock/tap/we
 
-Or, if you have virtualenvwrapper installed::
+Or install from source with Go::
 
-    $ mkvirtualenv withenv
-    $ pip install withenv
-
+    $ go install github.com/ionrock/we/cmd/we@latest
 
 This will install the `we` command line tool.

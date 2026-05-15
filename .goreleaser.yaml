@@ -45,6 +45,20 @@ release:
 
   prerelease: auto
 
+brews:
+  - name: we
+    homepage: https://github.com/ionrock/we
+    description: Apply YAML/JSON env files before running commands
+    repository:
+      owner: ionrock
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    install: |
+      bin.install "we"
+    test: |
+      system "#{bin}/we", "--help"
+
 changelog:
   sort: asc
   filters:

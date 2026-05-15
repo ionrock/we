@@ -23,6 +23,12 @@ information.
 $ we -e test_user_creds.yml ansible-play install-app
 ```
 
+Install with Homebrew:
+
+```bash
+brew install ionrock/tap/we
+```
+
 See the [Docs](https://withenv.readthedocs.org) for info.
 
 https://travis-ci.org/ionrock/we/builds
