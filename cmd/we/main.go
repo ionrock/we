@@ -74,7 +74,7 @@ func WeAction(c *cli.Context) error {
 		log.Debug().Msgf("No config found: %q", err)
 	}
 
-	// weargs are the combined set of commmand line args after
+	// weargs are the combined set of command line args after
 	// considering automatic config like ~/.withenv.yml.
 	weargs := []string{}
 
@@ -356,18 +356,18 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:      "convert",
-				Usage:     "Convert an env script file (.env, .envrc, etc.) to YAML",
+				Usage:     "Convert a dotenv-style env script (.env, .envrc, etc.) to withenv YAML",
 				ArgsUsage: "<input-file>",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "output",
 						Aliases: []string{"o"},
-						Usage:   "Output file path (defaults to stdout)",
+						Usage:   "Write converted YAML to `FILE` instead of stdout",
 					},
 					&cli.BoolFlag{
 						Name:    "debug",
 						Aliases: []string{"D"},
-						Usage:   "Turn on debugging output",
+						Usage:   "Turn on debug logging",
 					},
 				},
 				Action: ConvertAction,
@@ -378,63 +378,63 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "debug",
 				Aliases: []string{"D"},
-				Usage:   "Turn on debugging output",
+				Usage:   "Turn on debug logging",
 			},
 
 			&cli.StringSliceFlag{
 				Name:    "env",
 				Aliases: []string{"e"},
-				Usage:   "A YAML/JSON file to include in the environment.",
+				Usage:   "Load environment variables from a YAML or JSON `FILE` (repeatable)",
 			},
 
 			&cli.StringSliceFlag{
 				Name:    "script",
 				Aliases: []string{"s"},
-				Usage:   "Execute a script that outputs YAML/JSON.",
+				Usage:   "Run `COMMAND` and load its YAML or JSON output (repeatable)",
 			},
 
 			&cli.StringSliceFlag{
 				Name:    "directory",
 				Aliases: []string{"d"},
-				Usage:   "A directory containing YAML/JSON files to recursively apply to the environment.",
+				Usage:   "Recursively load YAML/JSON files from `DIR` (repeatable)",
 			},
 
 			&cli.StringSliceFlag{
 				Name:    "alias",
 				Aliases: []string{"a"},
-				Usage:   "A YAML file containing a list of file/directory entries to apply to the environment.",
+				Usage:   "Load a withenv alias YAML `FILE` containing file, directory, script, envvar, template, or sandbox entries (repeatable)",
 			},
 
 			&cli.StringSliceFlag{
 				Name:    "envvar",
 				Aliases: []string{"E"},
-				Usage:   "Override a single environment variable.",
+				Usage:   "Set or override one environment variable as `KEY=VALUE` (repeatable)",
 			},
 
 			&cli.BoolFlag{
 				Name:    "clean",
 				Aliases: []string{"c"},
-				Usage:   "Only use variables defined by YAML",
+				Usage:   "Run command with only variables loaded by withenv sources",
 			},
 
 			&cli.BoolFlag{
 				Name:  "no-direnv",
-				Usage: "Disable automatic .envrc loading",
+				Usage: "Disable automatic upward search and loading of .envrc",
 			},
 
 			&cli.BoolFlag{
 				Name:  "agent",
-				Usage: "Run command in a sandboxed environment for AI agents",
+				Usage: "Run command with agent protections: filesystem sandbox plus Claude Code command re-evaluation hooks",
 			},
 
 			&cli.StringSliceFlag{
 				Name:  "sandbox-deny",
-				Usage: "Additional paths to deny in agent sandbox",
+				Usage: "Deny read access to additional `PATH` values in agent sandbox (repeatable)",
 			},
 
 			&cli.StringSliceFlag{
 				Name:  "sandbox-allow",
-				Usage: "Paths to allow as exceptions to sandbox deny rules",
+				Usage: "Allow `PATH` values as exceptions to agent sandbox deny rules (repeatable)",
 			},
 
 			&cli.BoolFlag{
@@ -445,7 +445,7 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:    "template",
 				Aliases: []string{"t"},
-				Usage:   "Apply a template.",
+				Usage:   "Render a Go `TEMPLATE[:TARGET]` file before running the command (repeatable)",
 			},
 		},
 		Action: WeAction,

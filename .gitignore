@@ -1,5 +1,7 @@
 .glide
+.venv
 bin
 vendor
 /we
 .ghtoken.yml
+/site

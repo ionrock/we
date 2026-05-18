@@ -1,0 +1,45 @@
+site_name: Withenv Documentation
+site_description: Explicit environment configuration before running commands.
+site_url: https://withenv.readthedocs.io/
+repo_url: https://github.com/ionrock/we
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.indexes
+    - navigation.sections
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - Practical usage: usage.md
+  - Examples: examples.md
+  - Reference: reference.md
+  - Contributing: contributing.md
+  - Authors: authors.md
+  - History: history.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true

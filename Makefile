@@ -1,4 +1,4 @@
-.PHONY: clean install
+.PHONY: clean install docs-bootstrap docs docs-serve docs-clean
 
 EXECUTABLE=we
 WEPKG=./cmd/we
@@ -7,6 +7,10 @@ LAST_TAG := $(shell git describe --abbrev=0 --tags)
 
 VENV=.venv
 BUMP=$(VENV)/bin/bumpversion
+PIP=$(VENV)/bin/pip
+MKDOCS=$(VENV)/bin/mkdocs
+DOCS_STAMP=$(VENV)/.docs-deps-stamp
+PYTHON?=python3
 BUMPTYPE=patch
 
 SOURCEDIR=.
@@ -28,8 +32,26 @@ tidy:
 	go mod tidy
 
 clean:
-	rm we
+	rm -f we
 	rm -rf bin
+	rm -rf site
+
+docs-bootstrap: $(DOCS_STAMP)
+
+$(DOCS_STAMP): docs/requirements.txt
+	$(PYTHON) -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r docs/requirements.txt
+	touch $(DOCS_STAMP)
+
+docs: docs-bootstrap
+	$(MKDOCS) build
+
+docs-serve: docs-bootstrap
+	$(MKDOCS) serve
+
+docs-clean:
+	rm -rf site
 
 we-example: we
 	sh examples/hello_world.sh
