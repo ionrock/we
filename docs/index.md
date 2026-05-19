@@ -1,13 +1,9 @@
 # Withenv documentation
 
-Withenv (`we`) loads environment variables from explicit YAML, JSON, dotenv-style scripts, directories, and aliases before running a command. It keeps configuration close to your project while leaving your interactive shell unchanged.
+Withenv (`we`) prefixes commands with an explicit environment loaded from YAML, JSON, scripts, directories, and aliases. It keeps project configuration repeatable without permanently changing your shell.
 
-## Start here
+The docs are organized into three sections:
 
-If you are new to withenv, use the quickstart first. The usage guide gives practical patterns, and the reference documents every file format, flag, and command.
-
-- [Installation](installation.md)
-- [Quickstart](quickstart.md)
-- [Practical usage](usage.md)
-- [Examples](examples.md)
-- [Reference](reference.md)
+1. [Quickstart](quickstart.md): create a simple `.withenv.yml` alias and `devenv.yml`, then prefix commands with `we`.
+2. [Reference](reference.md): every CLI flag and option, what it does, and when to use it.
+3. [Advanced usage](advanced.md): agent sandboxing, dynamic script sources, command substitution, and config templates.

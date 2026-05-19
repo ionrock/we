@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	shlex "github.com/flynn/go-shlex"
 	"gopkg.in/yaml.v2"
 )
 
@@ -25,9 +27,25 @@ var (
 	commentPattern = regexp.MustCompile(`^\s*#`)
 )
 
-// ParseEnvScript parses a shell script file containing export statements
+// ParseEnvScript parses a dotenv-style file containing export statements and
+// simple direnv stdlib loading directives. It intentionally does not execute
+// arbitrary shell code.
 func ParseEnvScript(path string) (map[string]string, error) {
-	file, err := os.Open(path)
+	return parseEnvScript(path, map[string]bool{})
+}
+
+func parseEnvScript(path string, seen map[string]bool) (map[string]string, error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("resolving path: %w", err)
+	}
+
+	if seen[absPath] {
+		return map[string]string{}, nil
+	}
+	seen[absPath] = true
+
+	file, err := os.Open(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -41,6 +59,16 @@ func ParseEnvScript(path string) (map[string]string, error) {
 
 		// Skip empty lines and comments
 		if strings.TrimSpace(line) == "" || commentPattern.MatchString(line) {
+			continue
+		}
+
+		if loadedEnv, ok, err := parseDirenvLoad(line, filepath.Dir(absPath), seen); ok {
+			if err != nil {
+				return nil, err
+			}
+			for key, value := range loadedEnv {
+				env[key] = value
+			}
 			continue
 		}
 
@@ -66,6 +94,39 @@ func ParseEnvScript(path string) (map[string]string, error) {
 	}
 
 	return env, nil
+}
+
+func parseDirenvLoad(line string, baseDir string, seen map[string]bool) (map[string]string, bool, error) {
+	parts, err := shlex.Split(line)
+	if err != nil || len(parts) == 0 {
+		return nil, false, nil
+	}
+
+	cmd := parts[0]
+	if cmd != "dotenv" && cmd != "dotenv_if_exists" && cmd != "source_env" && cmd != "source_env_if_exists" {
+		return nil, false, nil
+	}
+
+	target := ".env"
+	if len(parts) > 1 {
+		target = parts[1]
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(baseDir, target)
+	}
+
+	if _, err := os.Stat(target); err != nil {
+		if os.IsNotExist(err) && (cmd == "dotenv_if_exists" || cmd == "source_env_if_exists") {
+			return map[string]string{}, true, nil
+		}
+		return nil, true, fmt.Errorf("%s %s: %w", cmd, target, err)
+	}
+
+	loadedEnv, err := parseEnvScript(target, seen)
+	if err != nil {
+		return nil, true, err
+	}
+	return loadedEnv, true, nil
 }
 
 // cleanValue removes surrounding quotes and handles escaping

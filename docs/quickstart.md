@@ -1,125 +1,119 @@
 # Quickstart
 
-## Install `we`
+This quickstart sets up the smallest useful withenv project: a `.withenv.yml` alias file and a `devenv.yml` file containing environment variables. After that, prefix commands with `we` and they run with your project environment.
 
-Using Homebrew:
+## Install
 
 ```bash
 brew install ionrock/tap/we
-```
-
-Or with Go:
-
-```bash
+# or
 go install github.com/ionrock/we/cmd/we@latest
 ```
 
-## Create your first environment
+Verify the CLI is available:
 
-Create `dev.yml`:
+```bash
+we --version
+```
 
-```yaml
+## Create `devenv.yml`
+
+Create a file named `devenv.yml` in your project:
+
+```yaml title="devenv.yml"
 ---
 APP_ENV: development
 LOG_LEVEL: debug
 DATABASE_URL: postgres://localhost/myapp
-```
-
-Run a command with those values:
-
-```bash
-we --env dev.yml printenv APP_ENV
-# development
-```
-
-Short flags work too:
-
-```bash
-we -e dev.yml env | grep LOG_LEVEL
-```
-
-## Layer values
-
-Sources are applied from left to right, so later values win:
-
-```yaml title="base.yml"
----
-LOG_LEVEL: info
 PORT: "8080"
 ```
 
-```yaml title="local.yml"
+These values will be available to commands launched through `we`.
+
+## Create `.withenv.yml`
+
+Create a `.withenv.yml` alias file next to `devenv.yml`:
+
+```yaml title=".withenv.yml"
 ---
-LOG_LEVEL: debug
+- file: devenv.yml
 ```
+
+When you run `we` anywhere in this directory tree, it searches upward for `.withenv.yml` and loads it automatically.
+
+## Prefix commands with `we`
+
+Run commands exactly as you normally would, but prefix them with `we`:
 
 ```bash
-we -e base.yml -e local.yml printenv LOG_LEVEL
-# debug
-```
+we printenv APP_ENV
+# development
 
-## Set one-off overrides
-
-Use `--envvar` / `-E` for values you do not want to put in a file:
-
-```bash
-we -e dev.yml -E PORT=9000 printenv PORT
-```
-
-## Use a directory
-
-Put multiple YAML or JSON files under a directory and load them recursively:
-
-```bash
-we --directory envs/dev ./my-app
-we -d envs/dev ./my-app
-```
-
-## Create a reusable alias
-
-Create `.withenv.yml` in your project root:
-
-```yaml
----
-- file: env/base.yml
-- file: env/dev.yml
-- envvar: APP_ENV=development
-```
-
-Now any command under that directory automatically loads the alias before explicit flags:
-
-```bash
+we go test ./...
+we npm run dev
 we ./my-app
 ```
 
-You can also name an alias file explicitly:
+Your current shell is unchanged. The variables are applied only to the child command.
+
+## Inspect what will be loaded
+
+With no command, `we` runs `env`:
 
 ```bash
-we --alias env/dev.alias.yml ./my-app
+we
 ```
 
-## Import an existing .env file
-
-Convert a dotenv-style file to withenv YAML:
+To see only variables loaded by withenv sources, use `--clean`:
 
 ```bash
-we convert .env --output env/local.yml
-we -e env/local.yml ./my-app
+we --clean
 ```
 
-## Render a config file from environment values
-
-Create `app.conf.tmpl`:
-
-```text
-env={{ .APP_ENV }}
-database={{ .DATABASE_URL }}
-```
-
-Render it and run your app:
+Add `--debug` / `-D` when you want to see how `we` discovers and applies files:
 
 ```bash
-we -e dev.yml --template app.conf.tmpl ./my-app --config app.conf
+we --debug --clean
+we -D --clean printenv APP_ENV
 ```
 
-See [Reference](reference.md) for all flags and file formats.
+## Override one value for a command
+
+Use `--envvar` / `-E` for one-off overrides:
+
+```bash
+we -E LOG_LEVEL=trace ./my-app
+```
+
+CLI flags are applied after `.withenv.yml`, so the override wins.
+
+## Optional: load an existing `.env` through `.envrc`
+
+Like direnv, `we` auto-loads `.envrc`, not `.env` directly. If you already have a dotenv-style `.env`, create this `.envrc`:
+
+```bash title=".envrc"
+dotenv
+```
+
+That loads `.env` from the same directory. You can also name a file explicitly:
+
+```bash title=".envrc"
+dotenv .env.local
+```
+
+## Add another environment file
+
+You can layer files by adding entries to `.withenv.yml`:
+
+```yaml title=".withenv.yml"
+---
+- file: devenv.yml
+- file: local.yml
+```
+
+Later entries override earlier entries. This is useful for local machine-specific values that should not be shared.
+
+## Next steps
+
+- Use [Reference](reference.md) for every CLI flag and option.
+- Use [Advanced usage](advanced.md) for scripts, templates, and `--agent`.

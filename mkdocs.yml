@@ -26,14 +26,9 @@ theme:
 
 nav:
   - Home: index.md
-  - Installation: installation.md
   - Quickstart: quickstart.md
-  - Practical usage: usage.md
-  - Examples: examples.md
   - Reference: reference.md
-  - Contributing: contributing.md
-  - Authors: authors.md
-  - History: history.md
+  - Advanced usage: advanced.md
 
 markdown_extensions:
   - admonition

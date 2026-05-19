@@ -63,6 +63,56 @@ export QUOTED_COMMENT="value # not a comment"
 	}
 }
 
+func TestParseEnvScriptSupportsDirenvDotenv(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(tmpDir, ".env"), []byte("FROM_DOTENV=loaded\nSHARED=dotenv\n"), 0644); err != nil {
+		t.Fatalf("Failed to create .env: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "extra.env"), []byte("FROM_EXTRA=loaded\n"), 0644); err != nil {
+		t.Fatalf("Failed to create extra env: %v", err)
+	}
+
+	envrcPath := filepath.Join(tmpDir, ".envrc")
+	content := `dotenv
+source_env extra.env
+source_env_if_exists missing.env
+dotenv_if_exists missing-dotenv.env
+SHARED=envrc
+`
+	if err := os.WriteFile(envrcPath, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create .envrc: %v", err)
+	}
+
+	env, err := ParseEnvScript(envrcPath)
+	if err != nil {
+		t.Fatalf("ParseEnvScript failed: %v", err)
+	}
+
+	if env["FROM_DOTENV"] != "loaded" {
+		t.Fatalf("expected FROM_DOTENV=loaded, got %q", env["FROM_DOTENV"])
+	}
+	if env["FROM_EXTRA"] != "loaded" {
+		t.Fatalf("expected FROM_EXTRA=loaded, got %q", env["FROM_EXTRA"])
+	}
+	if env["SHARED"] != "envrc" {
+		t.Fatalf("expected SHARED=envrc, got %q", env["SHARED"])
+	}
+}
+
+func TestParseEnvScriptDotenvDefaultsToDotEnv(t *testing.T) {
+	tmpDir := t.TempDir()
+	envrcPath := filepath.Join(tmpDir, ".envrc")
+	if err := os.WriteFile(envrcPath, []byte("dotenv\n"), 0644); err != nil {
+		t.Fatalf("Failed to create .envrc: %v", err)
+	}
+
+	_, err := ParseEnvScript(envrcPath)
+	if err == nil {
+		t.Fatal("expected missing .env to return an error")
+	}
+}
+
 func TestCleanValue(t *testing.T) {
 	tests := []struct {
 		input    string
