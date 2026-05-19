@@ -142,8 +142,14 @@ func WeAction(c *cli.Context) error {
 	if c.Bool("agent") {
 		log.Debug().Msg("Agent mode enabled")
 
-		// Collect sensitive paths from config
+		// Collect sensitive environment source paths. The child command gets the
+		// computed values, but should not be able to read the source files.
 		var sensitivePaths []string
+		if globalEnv != "" {
+			if resolved, err := sandbox.ResolvePath(globalEnv); err == nil {
+				sensitivePaths = append(sensitivePaths, resolved)
+			}
+		}
 		if config != "" {
 			paths, err := sandbox.CollectWithenvPaths(config)
 			if err != nil {
@@ -152,12 +158,11 @@ func WeAction(c *cli.Context) error {
 				sensitivePaths = append(sensitivePaths, paths...)
 			}
 		}
+		sensitivePaths = append(sensitivePaths, sandbox.CollectWithenvArgPaths(weargs, here)...)
 
-		// Collect .envrc path
-		envrcPath, _ := sandbox.CollectEnvrcPath(here)
-		if envrcPath != "" {
-			sensitivePaths = append(sensitivePaths, envrcPath)
-		}
+		// Collect .envrc plus dotenv/source_env files referenced from it.
+		envrcPaths, _ := sandbox.CollectEnvrcPaths(here)
+		sensitivePaths = append(sensitivePaths, envrcPaths...)
 
 		// Build sandbox config
 		sbCfg := sandbox.Config{

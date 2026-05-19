@@ -16,6 +16,17 @@ Agent mode does two things:
 
 This is useful when an agent needs project environment variables but should not freely read local credentials.
 
+In agent mode, withenv source files are also denied to the child command after they are loaded. This includes:
+
+- `.withenv.yml` aliases and the files/directories they reference
+- Explicit `--env` YAML/JSON files
+- Explicit `--directory` environment directories
+- `.envrc` files
+- `.env` / `source_env` files loaded from `.envrc`
+- `~/.withenv_global.yml`, when present
+
+The agent receives the computed environment, but cannot read the source files through the sandbox.
+
 ### Default denied paths
 
 The sandbox denies common sensitive paths when they exist, including:
