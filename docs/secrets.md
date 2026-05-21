@@ -29,24 +29,25 @@ Rules:
 The `op` provider uses the 1Password CLI and reads the reference with `op read`.
 
 ```yaml
-OPENAI_API_KEY: "secret:op://Private/api.openai.default.OPENAI_API_KEY/api key"
-GEMINI_PROJECT_ID: "secret:op://Private/api.gemini.project.GEMINI_PROJECT_ID/project id"
+PAYMENTS_API_KEY: "secret:op://Private/services.payments.dev/API key"
+SUPPORT_API_TOKEN: "secret:op://Private/services.support.dev/API token"
 ```
+
+These examples assume 1Password secure note items named `services.payments.dev` and `services.support.dev`, with note fields named `API key` and `API token`.
 
 This resolves by running commands equivalent to:
 
 ```bash
-op read 'op://Private/api.openai.default.OPENAI_API_KEY/api key'
-op read 'op://Private/api.gemini.project.GEMINI_PROJECT_ID/project id'
+op read 'op://Private/services.payments.dev/API key'
+op read 'op://Private/services.support.dev/API token'
 ```
 
 You can keep machine-wide secrets in `~/.withenv_global.yml`:
 
 ```yaml title="~/.withenv_global.yml"
 ---
-ANTHROPIC_API_KEY: "secret:op://Private/api.anthropic.default.ANTHROPIC_API_KEY/api key"
-OPENAI_API_KEY: "secret:op://Private/api.openai.default.OPENAI_API_KEY/api key"
-LINEAR_API_KEY: "secret:op://Private/api.linear.default.LINEAR_API_KEY/api key"
+PAYMENTS_API_KEY: "secret:op://Private/services.payments.dev/API key"
+SUPPORT_API_TOKEN: "secret:op://Private/services.support.dev/API token"
 ```
 
 Or project-specific secrets in a file referenced by `.withenv.yml`:
@@ -153,7 +154,7 @@ we --show-secrets --clean
 One-off secret refs work with `--envvar`:
 
 ```bash
-we --envvar 'OPENAI_API_KEY=secret:op://Private/api.openai.default.OPENAI_API_KEY/api key' your-command
+we --envvar 'PAYMENTS_API_KEY=secret:op://Private/services.payments.dev/API key' your-command
 ```
 
 Scripts can emit YAML or JSON containing secret refs. `we` resolves them after the script output is parsed:

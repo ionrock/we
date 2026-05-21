@@ -237,7 +237,7 @@ This produces `DATABASE_HOST=localhost` and `HOSTS="app1 app2"`.
 YAML/JSON environment values can use `secret:` references. `we` resolves these before running the child command and redacts them in inspection output:
 
 ```yaml
-OPENAI_API_KEY: "secret:op://Private/api.openai.default.OPENAI_API_KEY/api key"
+PAYMENTS_API_KEY: "secret:op://Private/services.payments.dev/API key"
 DATABASE_PASSWORD: "secret:aws-secretsmanager://prod/my-app#database.password"
 OPTIONAL_TOKEN: "secret?:op://Private/my-app/optional-token"
 ```
