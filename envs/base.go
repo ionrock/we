@@ -5,14 +5,7 @@ import (
 )
 
 type Action interface {
-	Apply() (map[string]string, error)
-}
-
-func updateEnvMap(cur, env map[string]string) map[string]string {
-	for k, v := range env {
-		cur[k] = v
-	}
-	return cur
+	Apply(cur Env) (Env, error)
 }
 
 func ignore(flag string) bool {
@@ -25,6 +18,7 @@ func ignore(flag string) bool {
 	ignored["--no-direnv"] = true
 	ignored["--agent"] = true
 	ignored["--sandbox-deny-network"] = true
+	ignored["--show-secrets"] = true
 
 	_, ok := ignored[flag]
 	return ok
@@ -81,17 +75,32 @@ func pairs(args []string, path string) chan Action {
 	return p
 }
 
-func WithEnv(args []string, path string) (map[string]string, error) {
-	env := make(map[string]string)
+func WithEnvTyped(args []string, path string) (Env, error) {
+	return WithEnvTypedFrom(args, path, nil)
+}
+
+func WithEnvTypedFrom(args []string, path string, initial Env) (Env, error) {
+	env := make(Env)
+	if initial != nil {
+		env = env.Merge(initial)
+	}
 
 	for action := range pairs(args, path) {
 		log.Debug().Msgf("Applying action: %#v", action)
-		newEnv, err := action.Apply()
+		newEnv, err := action.Apply(env)
 		if err != nil {
 			return nil, err
 		}
-		env = updateEnvMap(env, newEnv)
+		env = env.Merge(newEnv)
 	}
 
 	return env, nil
+}
+
+func WithEnv(args []string, path string) (map[string]string, error) {
+	env, err := WithEnvTyped(args, path)
+	if err != nil {
+		return nil, err
+	}
+	return env.StringMap(), nil
 }

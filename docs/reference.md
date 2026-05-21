@@ -7,7 +7,7 @@ we [global options] [COMMAND]
 we convert [command options] <input-file>
 ```
 
-If `COMMAND` is omitted, `we` runs `env` so you can inspect the computed environment.
+If `COMMAND` is omitted, `we` prints the computed environment so you can inspect it. Values known or inferred to be secret are redacted by default.
 
 ## How sources are applied
 
@@ -102,6 +102,10 @@ we --clean -e devenv.yml
 ```
 
 Use this to debug the exact environment withenv creates or to avoid accidental dependencies on your shell environment.
+
+### `--show-secrets`
+
+Shows secret values in no-command inspection output. This is disabled with `--agent`.
 
 ### `--no-direnv`
 
@@ -228,6 +232,18 @@ hosts:
 
 This produces `DATABASE_HOST=localhost` and `HOSTS="app1 app2"`.
 
+### Secret references
+
+YAML/JSON environment values can use `secret:` references. `we` resolves these before running the child command and redacts them in inspection output:
+
+```yaml
+PAYMENTS_API_KEY: "secret:op://Private/services.payments.dev/API key"
+DATABASE_PASSWORD: "secret:aws-secretsmanager://prod/my-app#database.password"
+OPTIONAL_TOKEN: "secret?:op://Private/my-app/optional-token"
+```
+
+`secret:` is required and fails if the provider lookup fails. `secret?:` is optional and omits the variable on failure. See [Secrets](secrets.md) for provider syntax, examples, and limitations.
+
 ## Automatic files
 
 ### `.withenv.yml`
@@ -258,3 +274,5 @@ source_env_if_exists local.env
 ```
 
 `.env` files are not auto-loaded by themselves. Add `dotenv` to `.envrc` when you want direnv-style `.env` loading. Disable `.envrc` behavior with `--no-direnv` or `WE_NO_DIRENV=1`.
+
+Secret provider refs are not resolved from `.envrc`, `.env`, or `source_env` files. Use withenv YAML/JSON sources, environment directories, scripts, `--envvar`, or `~/.withenv_global.yml` for `secret:` values.

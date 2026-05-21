@@ -28,6 +28,7 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Reference: reference.md
+  - Secrets: secrets.md
   - Advanced usage: advanced.md
 
 markdown_extensions:

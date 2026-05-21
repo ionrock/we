@@ -38,7 +38,7 @@ func (alias Alias) loadEntry(k, v string) (string, string) {
 	return fmt.Sprintf("--%s", k), v
 }
 
-func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string, error) {
+func (alias Alias) ApplyFromMap(entries []map[string]string, cur Env) (Env, error) {
 	args := []string{}
 
 	for _, e := range entries {
@@ -50,10 +50,14 @@ func (alias Alias) ApplyFromMap(entries []map[string]string) (map[string]string,
 
 	log.Debug().Msgf("Loaded alias %s with: %v", alias.path, args)
 
-	return WithEnv(args, filepath.Dir(alias.path))
+	env, err := WithEnvTypedFrom(args, filepath.Dir(alias.path), cur)
+	if err != nil {
+		return nil, err
+	}
+	return make(Env).Merge(cur).Merge(env), nil
 }
 
-func (alias Alias) Apply() (map[string]string, error) {
+func (alias Alias) Apply(cur Env) (Env, error) {
 	log.Debug().Msgf("Reading: %s", alias.path)
 	b, err := os.ReadFile(alias.path)
 	if err != nil {
@@ -80,7 +84,7 @@ func (alias Alias) Apply() (map[string]string, error) {
 		}
 	}
 
-	env, err := alias.ApplyFromMap(entries)
+	env, err := alias.ApplyFromMap(entries, cur)
 	if err != nil {
 		return nil, err
 	}

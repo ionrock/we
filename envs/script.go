@@ -12,7 +12,7 @@ type Script struct {
 	dir string
 }
 
-func (e Script) Apply() (map[string]string, error) {
+func (e Script) Apply(cur Env) (Env, error) {
 	proc := process.New(e.cmd, e.dir)
 
 	buf, err := proc.Execute()
@@ -30,5 +30,5 @@ func (e Script) Apply() (map[string]string, error) {
 	tmp.Close()
 
 	ef := File{path: tmp.Name()}
-	return ef.Apply()
+	return ef.Apply(cur)
 }

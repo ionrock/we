@@ -32,29 +32,28 @@ func versionString() string {
 	return fmt.Sprintf("%s-%s", gitref, builddate)
 }
 
-func convertEnvForCmd(env map[string]string) []string {
-	envlist := []string{}
-	for key := range env {
-		if key != "" && os.Getenv(key) != "" {
-			envlist = append(envlist, fmt.Sprintf("%s=%s", key, os.Getenv(key)))
-		}
-	}
-
-	return envlist
+func convertEnvForCmd(env envs.Env) []string {
+	return env.Environ()
 }
 
-func mergeEnv(dst, src map[string]string) map[string]string {
+func mergeEnv(dst, src envs.Env) envs.Env {
 	if dst == nil {
-		dst = make(map[string]string)
+		dst = make(envs.Env)
 	}
-	for k, v := range src {
-		dst[k] = v
+	return dst.Merge(src)
+}
+
+func printEnv(env envs.Env, showSecrets bool) {
+	for _, line := range env.Lines(showSecrets) {
+		fmt.Println(line)
 	}
-	return dst
 }
 
 func WeAction(c *cli.Context) error {
 	InitLogging(c.Bool("debug"))
+	if c.Bool("agent") && c.Bool("show-secrets") {
+		return fmt.Errorf("--show-secrets cannot be used with --agent")
+	}
 
 	// Load .envrc-managed variables first so explicit we flags can override.
 	here, err := os.Getwd()
@@ -63,10 +62,11 @@ func WeAction(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	envrcEnv, err := envs.MaybeLoadEnvrc(here, c.Bool("no-direnv"))
+	envrcVals, err := envs.MaybeLoadEnvrc(here, c.Bool("no-direnv"))
 	if err != nil {
 		return err
 	}
+	envrcEnv := envs.EnvFromStringMap(envrcVals, ".envrc")
 
 	log.Debug().Msg("initializing config")
 	config, err := findConfig(".")
@@ -92,7 +92,7 @@ func WeAction(c *cli.Context) error {
 	// 1) ~/.withenv_global.yml (if present)
 	// 2) .envrc values
 	// 3) explicit withenv inputs (config alias + flags)
-	env := map[string]string{}
+	env := envs.Env{}
 
 	globalEnv, err := findGlobalEnv()
 	if err != nil {
@@ -100,7 +100,7 @@ func WeAction(c *cli.Context) error {
 	}
 	if globalEnv != "" {
 		log.Debug().Msgf("Loading global env: %s", globalEnv)
-		globalVals, err := envs.WithEnv([]string{"--env", globalEnv}, here)
+		globalVals, err := envs.WithEnvTyped([]string{"--env", globalEnv}, here)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ func WeAction(c *cli.Context) error {
 
 	env = mergeEnv(env, envrcEnv)
 
-	explicitEnv, err := envs.WithEnv(weargs, here)
+	explicitEnv, err := envs.WithEnvTypedFrom(weargs, here, env)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func WeAction(c *cli.Context) error {
 
 	log.Debug().Msg("Computed Env")
 	for k, v := range env {
-		log.Debug().Msgf("export %s=%s", k, v)
+		log.Debug().Msgf("export %s=%s", k, v.DisplayForKey(k, false))
 	}
 
 	if err != nil {
@@ -131,7 +131,8 @@ func WeAction(c *cli.Context) error {
 	parts := make([]string, args.Len())
 
 	if len(parts) == 0 {
-		parts = append(parts, "env")
+		printEnv(env, c.Bool("show-secrets"))
+		return nil
 	}
 
 	for i, arg := range args.Slice() {
@@ -423,6 +424,11 @@ func main() {
 			},
 
 			&cli.BoolFlag{
+				Name:  "show-secrets",
+				Usage: "Show secret values in no-command inspection output (disabled with --agent)",
+			},
+
+			&cli.BoolFlag{
 				Name:  "no-direnv",
 				Usage: "Disable automatic upward search and loading of .envrc",
 			},
@@ -456,5 +462,8 @@ func main() {
 		Action: WeAction,
 	}
 
-	app.Run(os.Args)
+	if err := app.Run(os.Args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
