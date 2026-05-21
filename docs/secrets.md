@@ -1,294 +1,177 @@
-# Secrets design
+# Secrets
 
-This document captures the planned design for first-class secret support in `we`.
-
-## Goals
-
-- Preserve metadata that a loaded value is secret.
-- Resolve secrets during environment loading so failures happen before the child command starts.
-- Keep the existing source model compatible with files, directories, scripts, aliases, templates, and `--envvar`.
-- Allow scripts and existing tools to emit secret references with minimal changes.
-- Make secret providers pluggable behind a small interface.
-- Redact secret values in `we`-controlled output and logs.
-
-## Non-goals for the first implementation
-
-- Prevent a child process from printing secrets it receives in its environment.
-- Redact arbitrary stdout/stderr from child commands.
-- Implement Kubernetes integration in v1.
-- Implement external executable provider plugins in v1.
-- Treat provider-looking URLs as secrets without an explicit marker.
-
-## Internal representation
-
-The current environment representation is effectively `map[string]string`. Secret support should first introduce a typed value representation, for example:
-
-```go
-type Value struct {
-    Value    string // resolved value used for env injection and templates
-    Raw      string // original configured value, e.g. secret:op://vault/item/field
-    Secret   bool
-    Resolved bool
-    Source   string // file path, script, envvar, provider URI, etc.
-    Provider string // literal, op, aws-secretsmanager, bitwarden, etc.
-}
-
-type Env map[string]Value
-```
-
-The final conversion to `KEY=value` strings should happen at the command execution boundary. This preserves metadata for redaction, inspection, templates, and future integrations.
+`we` can resolve secrets while it loads environment values. Secret values are passed to the child command as normal environment variables, but `we` tracks their metadata so inspection output and debug logs can redact them.
 
 ## Secret reference syntax
 
-Secret references are explicit scalar string values:
+Use a scalar string value prefixed with `secret:`:
 
 ```yaml
-PASSWORD: secret:op://Private/my-app/password
-OPTIONAL_TOKEN: secret?:op://Private/my-app/optional-token
+DATABASE_PASSWORD: "secret:op://Private/my-app/password"
+```
+
+Use `secret?:` for optional secrets. If resolution fails, the variable is omitted instead of aborting the command:
+
+```yaml
+OPTIONAL_TOKEN: "secret?:op://Private/my-app/optional-token"
 ```
 
 Rules:
 
-- `secret:<provider-uri>` is required. Resolution failure aborts loading.
-- `secret?:<provider-uri>` is optional. Resolution failure omits the variable.
-- Provider-looking URLs without `secret:` are literal strings.
-- This syntax works in files, directories, scripts, aliases, and `--envvar` values because it only relies on scalar value parsing.
+- `secret:` is required for provider resolution. A value that merely looks like `op://...` is treated as a literal string.
+- Required secret failures abort environment loading before the child command starts.
+- Optional secret failures omit that variable.
+- Secret refs work anywhere `we` loads scalar environment values through withenv sources: YAML/JSON files, environment directories, script output, and `--envvar` values.
+- Quote values in YAML when they contain spaces or characters that YAML might otherwise interpret.
 
-## Expansion and propagation
+## 1Password examples
 
-Values should be expanded before secret resolution:
-
-```yaml
-OP_VAULT: Private
-PASSWORD: secret:op://$OP_VAULT/my-app/password
-```
-
-If a later value expands a secret value, secrecy propagates:
+The `op` provider uses the 1Password CLI and reads the reference with `op read`.
 
 ```yaml
-PASSWORD: secret:op://Private/my-app/password
-DATABASE_URL: postgres://user:$PASSWORD@localhost/db
+OPENAI_API_KEY: "secret:op://Private/api.openai.default.OPENAI_API_KEY/api key"
+GEMINI_PROJECT_ID: "secret:op://Private/api.gemini.project.GEMINI_PROJECT_ID/project id"
 ```
 
-`DATABASE_URL` should be marked secret because it contains secret material.
-
-Implementation implication: replace direct `os.ExpandEnv` use in loading paths with a helper that returns both the expanded string and whether any referenced values were secret.
-
-## Redaction and display
-
-`we`-controlled logs and inspection output should redact secret values.
-
-When no command is provided, `we` should stop delegating to external `env` and instead print the computed environment itself so secrets can be redacted:
-
-```text
-APP_ENV=development
-DATABASE_PASSWORD=<redacted>
-DATABASE_URL=<redacted>
-```
-
-Add an explicit escape hatch:
+This resolves by running commands equivalent to:
 
 ```bash
-we --show-secrets
+op read 'op://Private/api.openai.default.OPENAI_API_KEY/api key'
+op read 'op://Private/api.gemini.project.GEMINI_PROJECT_ID/project id'
 ```
 
-In `--agent` mode, `--show-secrets` must be disabled. The command should either fail fast or ignore `--show-secrets` with a warning; failing fast is preferred.
+You can keep machine-wide secrets in `~/.withenv_global.yml`:
 
-`--agent` v1 boundary: child commands still receive resolved secrets and can print them. We will not attempt stdout/stderr redaction in v1.
-
-`--clean` semantics should remain unchanged. Without `--clean`, the child inherits the parent environment plus loaded values. With `--clean`, it receives only values loaded by `we`.
-
-## Templates
-
-Templates should render real secret values by default because templates are commonly used to create runtime config files required by the child command.
-
-`we` debug output should not log rendered secret values. Rendered template targets may contain secret material and should be treated as sensitive in documentation and future `--agent` sandbox improvements.
-
-## Provider interface
-
-Providers should be built-in Go implementations for v1, behind a small interface so external plugins can be added later.
-
-Example shape:
-
-```go
-type Provider interface {
-    Scheme() string
-    Resolve(ctx context.Context, ref Ref) (string, error)
-}
-
-type Ref struct {
-    Original string
-    Scheme   string
-    URL      *url.URL
-    Optional bool
-}
+```yaml title="~/.withenv_global.yml"
+---
+ANTHROPIC_API_KEY: "secret:op://Private/api.anthropic.default.ANTHROPIC_API_KEY/api key"
+OPENAI_API_KEY: "secret:op://Private/api.openai.default.OPENAI_API_KEY/api key"
+LINEAR_API_KEY: "secret:op://Private/api.linear.default.LINEAR_API_KEY/api key"
 ```
 
-Providers should shell out to existing CLIs in v1 where that matches user workflows and avoids reimplementing auth/session behavior.
+Or project-specific secrets in a file referenced by `.withenv.yml`:
 
-## Provider roadmap
-
-### Phase 1: 1Password
-
-Use the `op` CLI.
-
-Primary syntax:
-
-```yaml
-DATABASE_PASSWORD: secret:op://Private/my-app/password
+```yaml title=".withenv.yml"
+- file: secrets.yml
 ```
 
-Implementation should prefer:
-
-```bash
-op read op://Private/my-app/password
+```yaml title="secrets.yml"
+DATABASE_PASSWORD: "secret:op://Private/my-app/database-password"
 ```
 
-This reuses 1Password's own secret reference syntax and existing `op` authentication/session behavior.
+## AWS Secrets Manager examples
 
-### Phase 2: AWS Secrets Manager
-
-Use the `aws` CLI and support JSON field extraction.
-
-```yaml
-# Whole SecretString
-DATABASE_CONFIG: secret:aws-secretsmanager://prod/app
-
-# Top-level JSON key
-DATABASE_PASSWORD: secret:aws-secretsmanager://prod/app#password
-
-# Nested JSON path
-DATABASE_PASSWORD: secret:aws-secretsmanager://prod/app#database.password
-
-# Optional profile/region
-DATABASE_PASSWORD: secret:aws-secretsmanager://prod/app?profile=dev&region=us-west-2#database.password
-```
-
-Provider behavior should match the existing workflow:
+The `aws-secretsmanager` provider shells out to the AWS CLI:
 
 ```bash
 aws secretsmanager get-secret-value \
-  --secret-id prod/app \
+  --secret-id prod/my-app \
   --query SecretString \
   --output text
 ```
 
-Then:
-
-- no fragment returns the whole `SecretString`
-- a fragment parses `SecretString` as JSON and selects the dot path
-- missing paths fail for `secret:` and omit for `secret?:`
-
-This emulates workflows like:
-
-```bash
-aws secretsmanager get-secret-value ... | jq -r '.SecretString | fromjson | .path.to.value'
-```
-
-### Phase 3: Bitwarden
-
-Use the `bw` CLI.
+Use the whole `SecretString`:
 
 ```yaml
-BW_PASSWORD: secret:bitwarden://item-name#password
-BW_USERNAME: secret:bitwarden://item-name#username
-BW_NOTES: secret:bitwarden://item-name#notes
-BW_CUSTOM: secret:bitwarden://item-name#custom.my-field
+DATABASE_CONFIG: "secret:aws-secretsmanager://prod/my-app"
 ```
 
-Provider behavior:
-
-```bash
-bw get item "item-name"
-```
-
-Then parse JSON:
-
-- `#username` -> `.login.username`
-- `#password` -> `.login.password`
-- `#notes` -> `.notes`
-- `#custom.foo` -> custom field named `foo`
-
-### Later: Kubernetes
-
-A good later integration is loading existing Kubernetes Secret values locally:
+Select a field from a JSON `SecretString` with a fragment:
 
 ```yaml
-PASSWORD: secret:kubernetes://namespace/secret-name#key
+DATABASE_PASSWORD: "secret:aws-secretsmanager://prod/my-app#password"
+DATABASE_PASSWORD: "secret:aws-secretsmanager://prod/my-app#database.password"
 ```
 
-Provider behavior would shell out to `kubectl`:
+Pass profile or region as query parameters:
+
+```yaml
+DATABASE_PASSWORD: "secret:aws-secretsmanager://prod/my-app?profile=dev&region=us-west-2#database.password"
+```
+
+## Bitwarden examples
+
+The `bitwarden` provider shells out to `bw get item <item>` and extracts common fields:
+
+```yaml
+BW_USERNAME: "secret:bitwarden://my-login#username"
+BW_PASSWORD: "secret:bitwarden://my-login#password"
+BW_NOTES: "secret:bitwarden://my-login#notes"
+BW_API_KEY: "secret:bitwarden://my-login#custom.api-key"
+```
+
+## Expansion and propagation
+
+Values are expanded before secret resolution, so refs can reuse earlier environment values:
+
+```yaml
+OP_VAULT: Private
+DATABASE_PASSWORD: "secret:op://$OP_VAULT/my-app/database-password"
+```
+
+If a later value expands a secret value, the derived value is treated as secret too:
+
+```yaml
+DATABASE_PASSWORD: "secret:op://Private/my-app/database-password"
+DATABASE_URL: "postgres://app:$DATABASE_PASSWORD@localhost/app"
+```
+
+`DATABASE_URL` is redacted in `we` output because it contains `DATABASE_PASSWORD`.
+
+When ordering matters within one file, use a list of maps:
+
+```yaml
+---
+- OP_VAULT: Private
+- DATABASE_PASSWORD: "secret:op://$OP_VAULT/my-app/database-password"
+- DATABASE_URL: "postgres://app:$DATABASE_PASSWORD@localhost/app"
+```
+
+## Inspecting secret-loaded environments
+
+With no command, `we` prints the computed environment. Secret values are redacted by default:
 
 ```bash
-kubectl get secret secret-name -n namespace -o json
+we --clean
 ```
 
-Then read `.data[key]` and base64-decode it. This should be deferred until the core metadata model and initial providers are stable.
+```text
+DATABASE_PASSWORD=<redacted>
+DATABASE_URL=<redacted>
+```
 
-Other Kubernetes opportunities, also deferred:
+Use `--show-secrets` to inspect actual values:
 
-- generate Kubernetes `Secret` manifests from a computed `we` environment
-- generate `envFrom` / `secretRef` deployment snippets
-- improve `--agent` sandbox behavior around generated secret-bearing files
+```bash
+we --show-secrets --clean
+```
 
-## Testing strategy
+`--show-secrets` cannot be used with `--agent`.
 
-### Representation and compatibility tests
+## Using secrets from `--envvar` and scripts
 
-- Existing YAML/JSON flattening behavior remains unchanged for ordinary scalar and nested values.
-- Existing `file`, `directory`, `script`, `envvar`, `alias`, and `template` tests continue to pass.
-- Values without `secret:` remain non-secret, including literal strings that look like provider URLs.
-- `secret:` and `secret?:` markers are recognized from all scalar-producing sources.
+One-off secret refs work with `--envvar`:
 
-### Expansion tests
+```bash
+we --envvar 'OPENAI_API_KEY=secret:op://Private/api.openai.default.OPENAI_API_KEY/api key' your-command
+```
 
-- Secret URIs expand environment variables before provider resolution.
-- Values derived from secret values are marked secret.
-- Values derived only from non-secret values remain non-secret.
-- Expansion order and override precedence match current behavior.
+Scripts can emit YAML or JSON containing secret refs. `we` resolves them after the script output is parsed:
 
-### Optional secret tests
+```bash
+we --script './print-secret-refs' your-command
+```
 
-- Required secret resolution failure aborts loading.
-- Optional secret resolution failure omits the variable.
-- Optional omission does not override an existing value in the computed environment.
+Example script output:
 
-### Redaction tests
+```yaml
+API_TOKEN: "secret:op://Private/my-app/api-token"
+```
 
-- Debug logs redact values marked secret.
-- No-command output redacts secrets by default.
-- `--show-secrets` prints real values outside `--agent` mode.
-- `--agent --show-secrets` fails fast.
-- Child command output is not redacted in v1; document this boundary with a test or explicit fixture if practical.
+## Limitations
 
-### Provider tests
-
-Provider tests should avoid real secret manager dependencies by using fake CLIs placed earlier in `PATH`.
-
-1Password fake `op`:
-
-- Assert `op read op://...` is invoked with the expected reference.
-- Return a known value and verify it becomes a secret `Value`.
-- Return non-zero and verify required vs optional behavior.
-
-AWS Secrets Manager fake `aws`:
-
-- Assert `aws secretsmanager get-secret-value --secret-id ... --query SecretString --output text` is invoked.
-- Verify `profile` and `region` query params become CLI flags.
-- Return a plain string and verify whole-secret extraction.
-- Return JSON and verify `#topLevel` and `#nested.path` extraction.
-- Verify missing JSON path behavior for required and optional refs.
-- Verify malformed JSON with a fragment fails clearly.
-
-Bitwarden fake `bw`:
-
-- Assert `bw get item <item>` is invoked.
-- Return item JSON and verify `#username`, `#password`, `#notes`, and `#custom.name` extraction.
-- Verify missing fields for required and optional refs.
-
-### Integration-style tests
-
-- Script source can emit `PASSWORD: secret:op://...` and the resulting value is resolved and marked secret.
-- `--envvar PASSWORD=secret:op://...` resolves and marks secret.
-- Template rendering receives real values while `we` logs/inspection redact them.
-- `--clean` preserves existing behavior with typed values converted at the boundary.
+- `.envrc`, `.env`, and `source_env` files are parsed for literal assignments only. Secret provider refs in these direnv-style files are not currently resolved; they will be passed through as literal strings. Use a withenv YAML/JSON file, environment directory, script source, `--envvar`, or `~/.withenv_global.yml` for secret refs.
+- A top-level `secrets:` section has no special meaning. Nested YAML is flattened into env var names, so put secret refs directly under the env var names you want to set.
+- `we` redacts its own inspection and debug output, but it cannot prevent the child process from printing secrets it receives in the environment.
+- Provider CLIs must be installed and authenticated before `we` runs (`op`, `aws`, or `bw`). `we` reuses those tools' existing auth/session behavior.
+- Provider-looking values without `secret:` are literals by design.
