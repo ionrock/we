@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
@@ -15,8 +14,9 @@ import (
 )
 
 type FlatEnv struct {
-	Path string
-	Env  map[string]string
+	Path  string
+	Env   map[string]string
+	Order []string
 }
 
 func (env *FlatEnv) key(parts []string) (string, error) {
@@ -39,6 +39,8 @@ func (env *FlatEnv) addString(prefix []string, value string) error {
 
 	if _, ok := env.Env[key]; ok {
 		value = fmt.Sprintf("%s %s", env.Env[key], value)
+	} else {
+		env.Order = append(env.Order, key)
 	}
 	env.Env[key] = value
 	ApplyString(env.Env, key, value)
@@ -106,7 +108,7 @@ func (env *FlatEnv) Decode() (interface{}, error) {
 	return f, nil
 }
 
-func NewFlatEnv(path string) (map[string]string, error) {
+func NewFlatEnvWithOrder(path string) (map[string]string, []string, error) {
 	env := &FlatEnv{
 		Path: path,
 		Env:  make(map[string]string),
@@ -114,18 +116,26 @@ func NewFlatEnv(path string) (map[string]string, error) {
 
 	f, err := env.Decode()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	err = env.Load(f, []string{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return env.Env, nil
+	return env.Env, env.Order, nil
+}
+
+func NewFlatEnv(path string) (map[string]string, error) {
+	env, _, err := NewFlatEnvWithOrder(path)
+	return env, err
 }
 
 func ApplyString(env map[string]string, key string, value string) {
-	env[key] = os.ExpandEnv(value)
-	os.Setenv(key, env[key])
-	log.Debug().Msgf("setting %s to %s", key, env[key])
+	env[key] = value
+	if strings.HasPrefix(env[key], "secret:") || strings.HasPrefix(env[key], "secret?:") {
+		log.Debug().Msgf("setting %s to <redacted>", key)
+	} else {
+		log.Debug().Msgf("setting %s to %s", key, env[key])
+	}
 }

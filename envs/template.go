@@ -11,7 +11,7 @@ type Template struct {
 	config string
 }
 
-func (t Template) Apply() (map[string]string, error) {
+func (t Template) Apply(cur Env) (Env, error) {
 	err := toconfig.ApplyTemplate(t.config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing template: %q", err)

@@ -32,16 +32,18 @@ func (e Dir) Files() chan string {
 	return files
 }
 
-func (e Dir) Apply() (map[string]string, error) {
-	env := make(map[string]string)
+func (e Dir) Apply(cur Env) (Env, error) {
+	env := make(Env)
+	working := make(Env).Merge(cur)
 
 	for fn := range e.Files() {
 		ef := File{fn}
-		newEnv, err := ef.Apply()
+		newEnv, err := ef.Apply(working)
 		if err != nil {
 			return nil, err
 		}
-		env = updateEnvMap(env, newEnv)
+		env = env.Merge(newEnv)
+		working = working.Merge(newEnv)
 	}
 
 	return env, nil

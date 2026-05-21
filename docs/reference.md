@@ -7,7 +7,7 @@ we [global options] [COMMAND]
 we convert [command options] <input-file>
 ```
 
-If `COMMAND` is omitted, `we` runs `env` so you can inspect the computed environment.
+If `COMMAND` is omitted, `we` prints the computed environment so you can inspect it. Values known or inferred to be secret are redacted by default.
 
 ## How sources are applied
 
@@ -102,6 +102,10 @@ we --clean -e devenv.yml
 ```
 
 Use this to debug the exact environment withenv creates or to avoid accidental dependencies on your shell environment.
+
+### `--show-secrets`
+
+Shows secret values in no-command inspection output. This is disabled with `--agent`.
 
 ### `--no-direnv`
 
