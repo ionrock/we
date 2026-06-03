@@ -104,11 +104,62 @@ we --template app.conf.tmpl cat app.conf
 
 By default, `app.conf.tmpl` renders to `app.conf`. Use `TEMPLATE:TARGET` to choose an explicit output path.
 
+## Secrets with SOPS and Age
+
+The preferred way to use secrets is to keep them in a SOPS-encrypted YAML file. `we` decrypts SOPS YAML directly with the SOPS Go library and marks all values from encrypted files as secret, so inspection output redacts them by default.
+
+Create a plaintext secrets file:
+
+```yaml
+# secrets.yml
+---
+DATABASE_PASSWORD: super-secret
+PAYMENTS_API_KEY: secret-token
+```
+
+Encrypt it to an Age recipient:
+
+```bash
+we sops encrypt \
+  --age age1YOUR_PUBLIC_RECIPIENT_HERE \
+  --output secrets.enc.yml \
+  secrets.yml
+```
+
+Load the encrypted file like any other withenv YAML source:
+
+```yaml
+# .withenv.yml
+---
+- file: devenv.yml
+- file: secrets.enc.yml
+```
+
+Then run commands normally:
+
+```bash
+we --clean printenv DATABASE_PASSWORD
+# super-secret
+
+we --clean
+# DATABASE_PASSWORD=<redacted>
+# PAYMENTS_API_KEY=<redacted>
+```
+
+After verifying decryption works, remove the plaintext file:
+
+```bash
+rm secrets.yml
+```
+
+Age private keys are discovered using SOPS' standard locations, such as `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, or the default key file under your user config directory.
+
 ## Documentation
 
 The docs are organized into three sections:
 
 - [Quickstart](docs/quickstart.md): set up `.withenv.yml` and `devenv.yml`.
+- [Secrets](docs/secrets.md): SOPS/Age encrypted YAML and secret provider references.
 - [Reference](docs/reference.md): every CLI flag and option.
 - [Advanced usage](docs/advanced.md): `--agent`, scripts, and templates.
 
