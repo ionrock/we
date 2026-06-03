@@ -5,6 +5,8 @@
 ```text
 we [global options] [COMMAND]
 we convert [command options] <input-file>
+we sops encrypt [command options] <input-file>
+we sops decrypt [command options] <input-file>
 ```
 
 If `COMMAND` is omitted, `we` prints the computed environment so you can inspect it. Values known or inferred to be secret are redacted by default.
@@ -184,6 +186,31 @@ Prints the version.
 we --version
 ```
 
+## `sops` commands
+
+`we sops encrypt` and `we sops decrypt` encrypt and decrypt YAML using the SOPS Go library directly. Age recipients are supported with `--age`, and decryption uses standard SOPS Age key discovery (`SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, and `~/.config/sops/age/keys.txt`).
+
+```bash
+we sops encrypt --age age1example... --output secrets.enc.yml secrets.yml
+we sops decrypt --output secrets.yml secrets.enc.yml
+```
+
+SOPS-encrypted YAML files are also decrypted automatically when loaded with `--env`, `.withenv.yml`, or `--directory`; all values from those files are redacted by default.
+
+### `we sops encrypt` flags
+
+- `--age RECIPIENT`: Age recipient to encrypt to. Repeatable. If omitted, `we` attempts to use a matching `.sops.yaml` creation rule.
+- `--output FILE`, `-o FILE`: write encrypted YAML to `FILE` instead of stdout.
+- `--in-place`: replace the input file with encrypted YAML.
+- `--encrypted-regex REGEX`: encrypt only matching keys.
+- `--unencrypted-regex REGEX`: leave matching keys unencrypted.
+- `--debug`, `-D`: enable debug logging.
+
+### `we sops decrypt` flags
+
+- `--output FILE`, `-o FILE`: write plaintext YAML to `FILE` instead of stdout.
+- `--debug`, `-D`: enable debug logging.
+
 ## `convert` command
 
 Converts a dotenv-style env script (`.env`, `.envrc`, etc.) into withenv YAML.
@@ -231,6 +258,10 @@ hosts:
 ```
 
 This produces `DATABASE_HOST=localhost` and `HOSTS="app1 app2"`.
+
+### SOPS-encrypted YAML
+
+If a YAML source contains top-level SOPS metadata, `we` decrypts it before flattening and loading values. This works for `--env`, alias `file` entries, and YAML files found by `--directory`.
 
 ### Secret references
 

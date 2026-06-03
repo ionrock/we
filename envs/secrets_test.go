@@ -19,6 +19,7 @@ func writeExecutable(t *testing.T, dir, name, content string) {
 }
 
 func TestSecretOPProviderAndRedaction(t *testing.T) {
+	t.Setenv("WE_SECRET_OP_BINARY", "")
 	dir := t.TempDir()
 	writeExecutable(t, dir, "op", "#!/bin/sh\necho op-secret\n")
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -40,7 +41,29 @@ func TestSecretOPProviderAndRedaction(t *testing.T) {
 	}
 }
 
+func TestSecretOPProviderUsesConfiguredBinary(t *testing.T) {
+	dir := t.TempDir()
+	writeExecutable(t, dir, "op", "#!/bin/sh\nexit 1\n")
+	writeExecutable(t, dir, "op-cache", "#!/bin/sh\necho cached-op-secret\n")
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("WE_SECRET_OP_BINARY", "op-cache")
+
+	path := filepath.Join(dir, "env.yml")
+	if err := os.WriteFile(path, []byte("PASSWORD: secret:op://Private/app/password\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	env, err := WithEnvTyped([]string{"--env", path}, dir)
+	if err != nil {
+		t.Fatalf("WithEnvTyped failed: %v", err)
+	}
+	if env["PASSWORD"].Value != "cached-op-secret" || !env["PASSWORD"].Secret {
+		t.Fatalf("expected resolved secret from configured binary, got %#v", env["PASSWORD"])
+	}
+}
+
 func TestOptionalSecretOmittedOnFailure(t *testing.T) {
+	t.Setenv("WE_SECRET_OP_BINARY", "")
 	dir := t.TempDir()
 	writeExecutable(t, dir, "op", "#!/bin/sh\nexit 1\n")
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -59,6 +82,7 @@ func TestOptionalSecretOmittedOnFailure(t *testing.T) {
 }
 
 func TestSecretExpansionPropagates(t *testing.T) {
+	t.Setenv("WE_SECRET_OP_BINARY", "")
 	dir := t.TempDir()
 	writeExecutable(t, dir, "op", "#!/bin/sh\necho pass\n")
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))

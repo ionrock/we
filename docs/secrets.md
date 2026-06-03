@@ -24,6 +24,35 @@ Rules:
 - Secret refs work anywhere `we` loads scalar environment values through withenv sources: YAML/JSON files, environment directories, script output, and `--envvar` values.
 - Quote values in YAML when they contain spaces or characters that YAML might otherwise interpret.
 
+## SOPS and Age encrypted YAML
+
+`we` automatically decrypts SOPS-encrypted YAML files when they are loaded with `--env`, referenced from `.withenv.yml`, or discovered through `--directory`. Decryption uses the SOPS Go library directly, not the `sops` CLI.
+
+```bash
+we -e secrets.enc.yml --clean printenv DATABASE_PASSWORD
+```
+
+All values from a SOPS-encrypted YAML file are treated as secret and redacted in inspection output, even when their variable names do not look sensitive.
+
+Age keys are loaded using SOPS' standard mechanisms, including `SOPS_AGE_KEY`, `SOPS_AGE_KEY_FILE`, and the default key file at `~/.config/sops/age/keys.txt`.
+
+You can encrypt YAML with Age recipients:
+
+```bash
+we sops encrypt \
+  --age age1example... \
+  --output secrets.enc.yml \
+  secrets.yml
+```
+
+Or decrypt explicitly:
+
+```bash
+we sops decrypt secrets.enc.yml --output secrets.yml
+```
+
+When `--age` is omitted, `we sops encrypt` attempts to use a matching `.sops.yaml` creation rule.
+
 ## 1Password examples
 
 The `op` provider uses the 1Password CLI and reads the reference with `op read`.
@@ -40,6 +69,18 @@ This resolves by running commands equivalent to:
 ```bash
 op read 'op://Private/services.payments.dev/API key'
 op read 'op://Private/services.support.dev/API token'
+```
+
+Set `WE_SECRET_OP_BINARY` to use a compatible wrapper instead of `op`, such as a local cache:
+
+```bash
+export WE_SECRET_OP_BINARY=op-cache
+```
+
+With that setting, the same secret refs are resolved with commands equivalent to:
+
+```bash
+op-cache read 'op://Private/services.payments.dev/API key'
 ```
 
 You can keep machine-wide secrets in `~/.withenv_global.yml`:

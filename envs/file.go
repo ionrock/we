@@ -21,16 +21,16 @@ func (e File) Parse() (map[string]string, error) {
 	return env, nil
 }
 
-func (e File) parseWithOrder() (map[string]string, []string, error) {
-	env, order, err := flat.NewFlatEnvWithOrder(e.path)
+func (e File) parseWithOrder() (map[string]string, []string, bool, error) {
+	env, order, encrypted, err := flat.NewFlatEnvWithOrderAndMetadata(e.path)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to parse flat environment")
 	}
-	return env, order, nil
+	return env, order, encrypted, nil
 }
 
 func (e File) Apply(cur Env) (Env, error) {
-	parsed, order, err := e.parseWithOrder()
+	parsed, order, encrypted, err := e.parseWithOrder()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (e File) Apply(cur Env) (Env, error) {
 		} else {
 			value := NewLiteralValue(expanded, e.path)
 			value.Raw = raw
-			value.Secret = usedSecret || LooksSensitiveName(k)
+			value.Secret = encrypted || usedSecret || LooksSensitiveName(k)
 			env[k] = value
 			working[k] = value
 		}

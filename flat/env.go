@@ -3,20 +3,22 @@ package flat
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/ionrock/we/process"
+	"github.com/ionrock/we/sopsutil"
 
 	"github.com/rs/zerolog/log"
 )
 
 type FlatEnv struct {
-	Path  string
-	Env   map[string]string
-	Order []string
+	Path      string
+	Env       map[string]string
+	Order     []string
+	Encrypted bool
 }
 
 func (env *FlatEnv) key(parts []string) (string, error) {
@@ -93,9 +95,17 @@ func (env *FlatEnv) Load(v interface{}, prefix []string) error {
 }
 
 func (env *FlatEnv) Decode() (interface{}, error) {
-	b, err := ioutil.ReadFile(env.Path)
+	b, err := os.ReadFile(env.Path)
 	if err != nil {
 		return nil, err
+	}
+
+	if sopsutil.IsSOPSYAML(b) {
+		b, err = sopsutil.DecryptYAML(env.Path, b)
+		if err != nil {
+			return nil, err
+		}
+		env.Encrypted = true
 	}
 
 	var f interface{}
@@ -108,7 +118,7 @@ func (env *FlatEnv) Decode() (interface{}, error) {
 	return f, nil
 }
 
-func NewFlatEnvWithOrder(path string) (map[string]string, []string, error) {
+func NewFlatEnvWithOrderAndMetadata(path string) (map[string]string, []string, bool, error) {
 	env := &FlatEnv{
 		Path: path,
 		Env:  make(map[string]string),
@@ -116,14 +126,19 @@ func NewFlatEnvWithOrder(path string) (map[string]string, []string, error) {
 
 	f, err := env.Decode()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
 
 	err = env.Load(f, []string{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, false, err
 	}
-	return env.Env, env.Order, nil
+	return env.Env, env.Order, env.Encrypted, nil
+}
+
+func NewFlatEnvWithOrder(path string) (map[string]string, []string, error) {
+	env, order, _, err := NewFlatEnvWithOrderAndMetadata(path)
+	return env, order, err
 }
 
 func NewFlatEnv(path string) (map[string]string, error) {

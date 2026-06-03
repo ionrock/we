@@ -11,6 +11,7 @@ import (
 	"github.com/ionrock/we/envscript"
 	"github.com/ionrock/we/process"
 	"github.com/ionrock/we/sandbox"
+	"github.com/ionrock/we/sopsutil"
 
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -323,6 +324,52 @@ func WeAction(c *cli.Context) error {
 	return err
 }
 
+func SOPSDecryptAction(c *cli.Context) error {
+	InitLogging(c.Bool("debug"))
+	if c.NArg() == 0 {
+		return fmt.Errorf("please provide a SOPS-encrypted YAML file")
+	}
+	inputPath := c.Args().Get(0)
+	cleartext, err := sopsutil.DecryptYAMLFile(inputPath)
+	if err != nil {
+		return err
+	}
+	if outputPath := c.String("output"); outputPath != "" {
+		return os.WriteFile(outputPath, cleartext, 0600)
+	}
+	fmt.Print(string(cleartext))
+	return nil
+}
+
+func SOPSEncryptAction(c *cli.Context) error {
+	InitLogging(c.Bool("debug"))
+	if c.NArg() == 0 {
+		return fmt.Errorf("please provide a plaintext YAML file")
+	}
+	inputPath := c.Args().Get(0)
+	data, err := os.ReadFile(inputPath)
+	if err != nil {
+		return err
+	}
+	encrypted, err := sopsutil.EncryptYAML(inputPath, data, sopsutil.EncryptOptions{
+		AgeRecipients:    c.StringSlice("age"),
+		EncryptedRegex:   c.String("encrypted-regex"),
+		UnencryptedRegex: c.String("unencrypted-regex"),
+	})
+	if err != nil {
+		return err
+	}
+	outputPath := c.String("output")
+	if c.Bool("in-place") {
+		outputPath = inputPath
+	}
+	if outputPath != "" {
+		return os.WriteFile(outputPath, encrypted, 0600)
+	}
+	fmt.Print(string(encrypted))
+	return nil
+}
+
 func ConvertAction(c *cli.Context) error {
 	InitLogging(c.Bool("debug"))
 
@@ -360,6 +407,36 @@ func main() {
 		Version:   versionString(),
 		ArgsUsage: "[COMMAND]",
 		Commands: []*cli.Command{
+			{
+				Name:  "sops",
+				Usage: "Encrypt or decrypt YAML files with SOPS using the Go library",
+				Subcommands: []*cli.Command{
+					{
+						Name:      "decrypt",
+						Usage:     "Decrypt a SOPS-encrypted YAML file",
+						ArgsUsage: "<input-file>",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "output", Aliases: []string{"o"}, Usage: "Write plaintext YAML to `FILE` instead of stdout"},
+							&cli.BoolFlag{Name: "debug", Aliases: []string{"D"}, Usage: "Turn on debug logging"},
+						},
+						Action: SOPSDecryptAction,
+					},
+					{
+						Name:      "encrypt",
+						Usage:     "Encrypt a YAML file with SOPS and Age recipients",
+						ArgsUsage: "<input-file>",
+						Flags: []cli.Flag{
+							&cli.StringSliceFlag{Name: "age", Usage: "Age `RECIPIENT` to encrypt to (repeatable); falls back to .sops.yaml when omitted"},
+							&cli.StringFlag{Name: "output", Aliases: []string{"o"}, Usage: "Write encrypted YAML to `FILE` instead of stdout"},
+							&cli.BoolFlag{Name: "in-place", Usage: "Replace the input file with encrypted YAML"},
+							&cli.StringFlag{Name: "encrypted-regex", Usage: "Encrypt only keys matching `REGEX`"},
+							&cli.StringFlag{Name: "unencrypted-regex", Usage: "Leave keys matching `REGEX` unencrypted"},
+							&cli.BoolFlag{Name: "debug", Aliases: []string{"D"}, Usage: "Turn on debug logging"},
+						},
+						Action: SOPSEncryptAction,
+					},
+				},
+			},
 			{
 				Name:      "convert",
 				Usage:     "Convert a dotenv-style env script (.env, .envrc, etc.) to withenv YAML",

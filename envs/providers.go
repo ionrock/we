@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -61,7 +62,11 @@ type OPProvider struct{}
 func (OPProvider) Scheme() string { return "op" }
 
 func (OPProvider) Resolve(ctx context.Context, ref SecretRef) (string, error) {
-	cmd := exec.CommandContext(ctx, "op", "read", ref.Original)
+	binary := os.Getenv("WE_SECRET_OP_BINARY")
+	if binary == "" {
+		binary = "op"
+	}
+	cmd := exec.CommandContext(ctx, binary, "read", ref.Original)
 	out, err := cmd.Output()
 	if err != nil {
 		return "", err
