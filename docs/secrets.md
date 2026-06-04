@@ -83,13 +83,20 @@ With that setting, the same secret refs are resolved with commands equivalent to
 op-cache read 'op://Private/services.payments.dev/API key'
 ```
 
-You can keep machine-wide secrets in `~/.withenv_global.yml`:
+You can keep machine-wide secrets in a file referenced by `~/.withenv_global.yml`:
 
 ```yaml title="~/.withenv_global.yml"
+---
+- file: .config/we/secrets.enc.yml
+```
+
+```yaml title="~/.config/we/secrets.enc.yml"
 ---
 PAYMENTS_API_KEY: "secret:op://Private/services.payments.dev/API key"
 SUPPORT_API_TOKEN: "secret:op://Private/services.support.dev/API token"
 ```
+
+`~/.withenv_global.yml` is loaded as an alias, so relative paths are resolved relative to your home directory.
 
 Or project-specific secrets in a file referenced by `.withenv.yml`:
 
@@ -212,7 +219,7 @@ API_TOKEN: "secret:op://Private/my-app/api-token"
 
 ## Limitations
 
-- `.envrc`, `.env`, and `source_env` files are parsed for literal assignments only. Secret provider refs in these direnv-style files are not currently resolved; they will be passed through as literal strings. Use a withenv YAML/JSON file, environment directory, script source, `--envvar`, or `~/.withenv_global.yml` for secret refs.
+- `.envrc`, `.env`, and `source_env` files are parsed for literal assignments only. Secret provider refs in these direnv-style files are not currently resolved; they will be passed through as literal strings. Use a withenv YAML/JSON file, environment directory, script source, `--envvar`, or a file referenced by `~/.withenv_global.yml` for secret refs.
 - A top-level `secrets:` section has no special meaning. Nested YAML is flattened into env var names, so put secret refs directly under the env var names you want to set.
 - `we` redacts its own inspection and debug output, but it cannot prevent the child process from printing secrets it receives in the environment.
 - Provider CLIs must be installed and authenticated before `we` runs (`op`, `aws`, or `bw`). `we` reuses those tools' existing auth/session behavior.

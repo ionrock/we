@@ -15,7 +15,7 @@ If `COMMAND` is omitted, `we` prints the computed environment so you can inspect
 
 Withenv sources are applied in this order. Later sources override earlier ones:
 
-1. `~/.withenv_global.yml`, if present
+1. `~/.withenv_global.yml` alias, if present
 2. nearest `.envrc`, unless disabled
 3. nearest `.withenv.yml` alias
 4. explicit CLI flags, from left to right
@@ -283,7 +283,15 @@ OPTIONAL_TOKEN: "secret?:op://Private/my-app/optional-token"
 
 ### `~/.withenv_global.yml`
 
-If present, this file is loaded before project sources. Use it for machine-wide defaults.
+If present, this file is loaded as an alias before project sources. Use it for machine-wide defaults, including references to encrypted secrets files:
+
+```yaml
+---
+- file: .config/we/defaults.yml
+- file: .config/we/secrets.enc.yml
+```
+
+Relative paths are resolved relative to `~/.withenv_global.yml`.
 
 ### `.envrc`
 
@@ -306,4 +314,4 @@ source_env_if_exists local.env
 
 `.env` files are not auto-loaded by themselves. Add `dotenv` to `.envrc` when you want direnv-style `.env` loading. Disable `.envrc` behavior with `--no-direnv` or `WE_NO_DIRENV=1`.
 
-Secret provider refs are not resolved from `.envrc`, `.env`, or `source_env` files. Use withenv YAML/JSON sources, environment directories, scripts, `--envvar`, or `~/.withenv_global.yml` for `secret:` values.
+Secret provider refs are not resolved from `.envrc`, `.env`, or `source_env` files. Use withenv YAML/JSON sources, environment directories, scripts, `--envvar`, or files referenced by `~/.withenv_global.yml` for `secret:` values.

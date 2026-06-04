@@ -23,7 +23,7 @@ In agent mode, withenv source files are also denied to the child command after t
 - Explicit `--directory` environment directories
 - `.envrc` files
 - `.env` / `source_env` files loaded from `.envrc`
-- `~/.withenv_global.yml`, when present
+- `~/.withenv_global.yml` and the files/directories it references, when present
 
 The agent receives the computed environment, but cannot read the source files through the sandbox.
 

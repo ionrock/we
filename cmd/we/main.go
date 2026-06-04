@@ -90,7 +90,7 @@ func WeAction(c *cli.Context) error {
 	log.Debug().Msgf("all args: %v", weargs)
 
 	// Create our env with this precedence:
-	// 1) ~/.withenv_global.yml (if present)
+	// 1) ~/.withenv_global.yml alias (if present)
 	// 2) .envrc values
 	// 3) explicit withenv inputs (config alias + flags)
 	env := envs.Env{}
@@ -100,8 +100,8 @@ func WeAction(c *cli.Context) error {
 		log.Debug().Msgf("Unable to resolve global env: %q", err)
 	}
 	if globalEnv != "" {
-		log.Debug().Msgf("Loading global env: %s", globalEnv)
-		globalVals, err := envs.WithEnvTyped([]string{"--env", globalEnv}, here)
+		log.Debug().Msgf("Loading global env alias: %s", globalEnv)
+		globalVals, err := envs.WithEnvTyped([]string{"--alias", globalEnv}, here)
 		if err != nil {
 			return err
 		}
@@ -148,8 +148,14 @@ func WeAction(c *cli.Context) error {
 		// computed values, but should not be able to read the source files.
 		var sensitivePaths []string
 		if globalEnv != "" {
-			if resolved, err := sandbox.ResolvePath(globalEnv); err == nil {
-				sensitivePaths = append(sensitivePaths, resolved)
+			paths, err := sandbox.CollectWithenvPaths(globalEnv)
+			if err != nil {
+				log.Debug().Err(err).Msg("error collecting global withenv paths")
+				if resolved, resolveErr := sandbox.ResolvePath(globalEnv); resolveErr == nil {
+					sensitivePaths = append(sensitivePaths, resolved)
+				}
+			} else {
+				sensitivePaths = append(sensitivePaths, paths...)
 			}
 		}
 		if config != "" {
