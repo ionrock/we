@@ -34,21 +34,24 @@ func (s *DarwinSandbox) buildProfile() string {
 	b.WriteString("(version 1)\n")
 	b.WriteString("(allow default)\n")
 
-	// Deny rules -- (with no-report) suppresses sandbox violation logging
+	// Deny rules -- (with no-report) suppresses sandbox violation logging.
+	// Writes are denied as well as reads: otherwise a sandboxed agent could
+	// tamper with credentials (e.g. ~/.ssh/authorized_keys) or rewrite env
+	// sources such as .withenv.yml to run commands outside the sandbox later.
 	for _, rule := range s.config.Deny {
 		if rule.Dir {
-			fmt.Fprintf(&b, "(deny file-read* (subpath %q) (with no-report))\n", rule.Path)
+			fmt.Fprintf(&b, "(deny file-read* file-write* (subpath %q) (with no-report))\n", rule.Path)
 		} else {
-			fmt.Fprintf(&b, "(deny file-read* (literal %q) (with no-report))\n", rule.Path)
+			fmt.Fprintf(&b, "(deny file-read* file-write* (literal %q) (with no-report))\n", rule.Path)
 		}
 	}
 
 	// Allow overrides (must come after denies -- last matching rule wins)
 	for _, rule := range s.config.Allow {
 		if rule.Dir {
-			fmt.Fprintf(&b, "(allow file-read* (subpath %q))\n", rule.Path)
+			fmt.Fprintf(&b, "(allow file-read* file-write* (subpath %q))\n", rule.Path)
 		} else {
-			fmt.Fprintf(&b, "(allow file-read* (literal %q))\n", rule.Path)
+			fmt.Fprintf(&b, "(allow file-read* file-write* (literal %q))\n", rule.Path)
 		}
 	}
 

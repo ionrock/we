@@ -318,7 +318,7 @@ func WeAction(c *cli.Context) error {
 	cmd.Stdin = os.Stdin
 
 	if c.Bool("clean") {
-		log.Debug().Msgf("Cleaning env: %v", env)
+		log.Debug().Msg("Cleaning env: running with only computed variables")
 		cmd.Env = convertEnvForCmd(env)
 	}
 
@@ -328,6 +328,15 @@ func WeAction(c *cli.Context) error {
 	}
 
 	return err
+}
+
+// writePrivateFile writes data readable only by the current user. os.WriteFile
+// only applies the mode when creating a file, so tighten existing files too.
+func writePrivateFile(path string, data []byte) error {
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return err
+	}
+	return os.Chmod(path, 0600)
 }
 
 func SOPSDecryptAction(c *cli.Context) error {
@@ -341,7 +350,7 @@ func SOPSDecryptAction(c *cli.Context) error {
 		return err
 	}
 	if outputPath := c.String("output"); outputPath != "" {
-		return os.WriteFile(outputPath, cleartext, 0600)
+		return writePrivateFile(outputPath, cleartext)
 	}
 	fmt.Print(string(cleartext))
 	return nil
@@ -394,7 +403,7 @@ func ConvertAction(c *cli.Context) error {
 	}
 
 	if outputPath != "" {
-		err = os.WriteFile(outputPath, yamlData, 0644)
+		err = writePrivateFile(outputPath, yamlData)
 		if err != nil {
 			return fmt.Errorf("failed to write output file: %w", err)
 		}

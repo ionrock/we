@@ -59,7 +59,7 @@ func (e Envrc) Apply() (map[string]string, error) {
 
 	for k, v := range env {
 		expanded := os.ExpandEnv(v)
-		log.Debug().Msgf("Setting from .envrc: %s=%s", k, expanded)
+		log.Debug().Msgf("Setting from .envrc: %s=%s", k, NewLiteralValue(expanded, ".envrc").DisplayForKey(k, false))
 		if err := os.Setenv(k, expanded); err != nil {
 			return nil, err
 		}

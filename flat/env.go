@@ -148,9 +148,7 @@ func NewFlatEnv(path string) (map[string]string, error) {
 
 func ApplyString(env map[string]string, key string, value string) {
 	env[key] = value
-	if strings.HasPrefix(env[key], "secret:") || strings.HasPrefix(env[key], "secret?:") {
-		log.Debug().Msgf("setting %s to <redacted>", key)
-	} else {
-		log.Debug().Msgf("setting %s to %s", key, env[key])
-	}
+	// Never log values here: they may come from SOPS-decrypted files or
+	// command substitution and can contain secrets.
+	log.Debug().Msgf("setting %s", key)
 }

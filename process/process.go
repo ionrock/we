@@ -41,8 +41,19 @@ func RunAndWait(cmd *exec.Cmd) (int, error) {
 	return 0, err
 }
 
+// SplitCommand tokenizes cmd and then expands environment variables within
+// each token. Expansion happens after tokenizing so that variable values can
+// never introduce additional arguments, quoting, or pipeline stages.
 func SplitCommand(cmd string) []string {
-	parts, err := shlex.Split(os.ExpandEnv(cmd))
+	parts := splitRaw(cmd)
+	for i := range parts {
+		parts[i] = os.ExpandEnv(parts[i])
+	}
+	return parts
+}
+
+func splitRaw(cmd string) []string {
+	parts, err := shlex.Split(cmd)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to split command")
 	}
@@ -68,8 +79,8 @@ func procDir(path string) (string, error) {
 }
 
 func CompileValue(value string, path string) (string, error) {
-	log.Debug().Msgf("%#v", value)
 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
+		log.Debug().Msgf("Running command substitution: %s", value)
 		dirname, err := procDir(path)
 		if err != nil {
 			return "", err
@@ -169,10 +180,11 @@ func addCmd(cmds []*exec.Cmd, cmd []string) []*exec.Cmd {
 }
 
 func findCmds(cmdstr string) []*exec.Cmd {
-	parts := SplitCommand(cmdstr)
-	for i := range parts {
-		parts[i] = os.ExpandEnv(parts[i])
-	}
+	// Detect pipes on the raw tokens before expansion so an environment
+	// variable whose value is "|" cannot create a new pipeline stage. Expand
+	// each token exactly once, after splitting.
+	log.Debug().Msgf("Parsing cmd: %s", cmdstr)
+	parts := splitRaw(cmdstr)
 
 	cmds := []*exec.Cmd{}
 
@@ -182,7 +194,7 @@ func findCmds(cmdstr string) []*exec.Cmd {
 			cmds = addCmd(cmds, cmd)
 			cmd = []string{}
 		} else {
-			cmd = append(cmd, p)
+			cmd = append(cmd, os.ExpandEnv(p))
 		}
 	}
 
@@ -190,8 +202,5 @@ func findCmds(cmdstr string) []*exec.Cmd {
 		cmds = addCmd(cmds, cmd)
 	}
 
-	for _, c := range cmds {
-		log.Debug().Msgf("Parsed cmd: %s", c)
-	}
 	return cmds
 }

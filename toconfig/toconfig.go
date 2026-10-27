@@ -1,6 +1,7 @@
 package toconfig
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -21,86 +22,135 @@ type ConfigTmpl struct {
 	FileMode string `json:"mode"`
 }
 
+// defaultFileMode is used for newly rendered files when no mode is given.
+// Rendered templates receive the full environment, which commonly includes
+// secrets, so new files are private by default.
+const defaultFileMode os.FileMode = 0600
+
 func (conf *ConfigTmpl) Execute() error {
-	fh, err := os.Create(conf.Target)
+	tmplAbs, err := filepath.Abs(conf.Template)
+	if err != nil {
+		return err
+	}
+	targetAbs, err := filepath.Abs(conf.Target)
+	if err != nil {
+		return err
+	}
+	if tmplAbs == targetAbs {
+		return fmt.Errorf("template %s would overwrite itself; use TEMPLATE:TARGET or a .tmpl suffix", conf.Template)
+	}
+
+	// Render fully before touching the target so a failing template never
+	// truncates an existing file.
+	var buf bytes.Buffer
+	if err := ApplyConfig(conf.Template, &buf); err != nil {
+		return err
+	}
+
+	mode, err := conf.fileMode(targetAbs)
 	if err != nil {
 		return err
 	}
 
-	defer fh.Close()
-
-	err = ApplyConfig(conf.Template, fh)
+	// Write to a private temp file in the target directory, fix up
+	// permissions and ownership, then atomically rename into place. This
+	// avoids a window where secrets are readable with umask-derived
+	// permissions and never follows a symlink planted at the target path.
+	tmp, err := os.CreateTemp(filepath.Dir(targetAbs), "."+filepath.Base(targetAbs)+".tmp-*")
 	if err != nil {
 		return err
 	}
+	tmpName := tmp.Name()
+	committed := false
+	defer func() {
+		if !committed {
+			os.Remove(tmpName)
+		}
+	}()
 
-	err = conf.SetPermissions()
-	if err != nil {
+	if _, err := tmp.Write(buf.Bytes()); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
 		return err
 	}
 
+	if err := conf.setOwnership(tmpName); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, mode); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmpName, targetAbs); err != nil {
+		return err
+	}
+	committed = true
 	return nil
 }
 
-func (conf *ConfigTmpl) SetPermissions() error {
-
-	var uid int
-	var gid int
-
-	// Set some defaults based on the current user
-	u, err := user.Current()
-	if err != nil {
-		return err
-	}
-
-	g, err := user.LookupGroupId(u.Gid)
-	if err != nil {
-		return err
-	}
-
-	// If we have an owner, update the user var
-	if conf.Owner != "" {
-		u, err = user.Lookup(conf.Owner)
-		if err != nil {
-			return err
-		}
-	}
-
-	// if we have a group, update the group var
-	if conf.Group != "" {
-		g, err = user.LookupGroup(conf.Group)
-		if err != nil {
-			return nil
-		}
-	}
-
-	// set the user and group id vars
-	uid, err = strconv.Atoi(u.Uid)
-	if err != nil {
-		return err
-	}
-
-	gid, err = strconv.Atoi(g.Gid)
-	if err != nil {
-		return nil
-	}
-
-	// chown the file
-	err = os.Chown(conf.Target, uid, gid)
-	if err != nil {
-		return err
-	}
-
+// fileMode returns the configured mode, the existing target's mode, or the
+// private default for new files.
+func (conf *ConfigTmpl) fileMode(target string) (os.FileMode, error) {
 	if conf.FileMode != "" {
 		mode, err := strconv.ParseUint(conf.FileMode, 0, 32)
 		if err != nil {
+			return 0, err
+		}
+		return os.FileMode(mode).Perm(), nil
+	}
+	if info, err := os.Lstat(target); err == nil && info.Mode().IsRegular() {
+		return info.Mode().Perm(), nil
+	}
+	return defaultFileMode, nil
+}
+
+// SetPermissions applies the configured ownership and mode to the target.
+func (conf *ConfigTmpl) SetPermissions() error {
+	if err := conf.setOwnership(conf.Target); err != nil {
+		return err
+	}
+	if conf.FileMode != "" {
+		mode, err := conf.fileMode(conf.Target)
+		if err != nil {
 			return err
 		}
+		return os.Chmod(conf.Target, mode)
+	}
+	return nil
+}
 
-		os.Chmod(conf.Target, os.FileMode(mode))
+func (conf *ConfigTmpl) setOwnership(path string) error {
+	if conf.Owner == "" && conf.Group == "" {
+		return nil
 	}
 
-	return nil
+	uid, gid := -1, -1
+
+	if conf.Owner != "" {
+		u, err := user.Lookup(conf.Owner)
+		if err != nil {
+			return err
+		}
+		uid, err = strconv.Atoi(u.Uid)
+		if err != nil {
+			return err
+		}
+	}
+
+	if conf.Group != "" {
+		g, err := user.LookupGroup(conf.Group)
+		if err != nil {
+			return err
+		}
+		gid, err = strconv.Atoi(g.Gid)
+		if err != nil {
+			return err
+		}
+	}
+
+	return os.Lchown(path, uid, gid)
 }
 
 func envMap() map[string]string {

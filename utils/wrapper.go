@@ -11,9 +11,13 @@ import (
 )
 
 func splitCmd(cmd string) []string {
-	parts, err := shlex.Split(os.ExpandEnv(cmd))
+	// Split before expanding so variable values cannot inject extra arguments.
+	parts, err := shlex.Split(cmd)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to split command")
+	}
+	for i := range parts {
+		parts[i] = os.ExpandEnv(parts[i])
 	}
 	return parts
 }

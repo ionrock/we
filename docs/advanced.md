@@ -12,9 +12,11 @@ we --agent -e devenv.yml claude
 Agent mode does two things:
 
 1. Wraps the command in the platform sandbox implementation.
-2. Writes temporary Claude Code hooks so Bash tool commands are prefixed with `we` and re-evaluate the environment.
+2. Writes temporary Claude Code hooks so Bash tool commands are prefixed with `we` and re-evaluate the environment. The hook only rewrites the command; it does not approve it, so rewritten commands still go through Claude Code's normal permission checks.
 
 This is useful when an agent needs project environment variables but should not freely read local credentials.
+
+Denied paths are blocked for both reading and writing, so the agent cannot tamper with credentials or rewrite env source files. `--sandbox-allow` exceptions restore both read and write access.
 
 In agent mode, withenv source files are also denied to the child command after they are loaded. This includes:
 
@@ -68,7 +70,7 @@ we --agent \
       - git
 ```
 
-`skip-prefix` lists commands that Claude Code hooks should not rewrite with a leading `we`.
+`skip-prefix` lists commands that Claude Code hooks should not rewrite with a leading `we`. Entries are matched literally as the first word of the command (no glob patterns).
 
 ## Scripts
 
